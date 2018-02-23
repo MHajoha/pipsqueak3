@@ -20,9 +20,9 @@ from abc import abstractmethod, abstractproperty, ABC
 
 import websockets
 
-import config
+from config import config
 
-log = logging.getLogger(f'{config.Logging.base_logger}.{__name__}')
+log = logging.getLogger(f'{config["logging"]["base_logger"]}.{__name__}')
 
 
 class APIError(Exception):

@@ -34,9 +34,10 @@
     "prefix": "!"
   },
   "api": {
-    "online_mode": false,
-    "url": null,
-    "tokenfile": null
+    "enable": true,
+    "tls": true,
+    "hostname": "dev.api.fuelrats.com",
+    "token": null
   },
   "permissions": {
     "recruit": {
