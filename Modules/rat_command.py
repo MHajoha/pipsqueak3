@@ -102,9 +102,10 @@ class _Param(object):
     FIND = 1
     RAT = 2
     WORD = 3
+    TEXT = 4
 
     def __init__(self, type: int, create: bool=False, optional: bool=False):
-        assert 0 <= type <= 3
+        assert 0 <= type <= 4
 
         self.type = type
         self.create = create
@@ -191,6 +192,7 @@ def parametrize(params: str, usage: str):
             'F': Same as 'C', but returning `(Rescue, bool)` as returned by `RescueBoard.find`.
             'r': Argument will be the `Rat` object found.
             'w': Argument will be a single word (separated by whitespace).
+            't': Argument will be everything from here up to the end of the line.
 
             '?': Marks the previous parameter as optional. If it isn't provided, don't complain. Optional parameters
                 may not precede mandatory ones. Argument will be None if not provided.
@@ -209,7 +211,8 @@ def parametrize(params: str, usage: str):
         async def new_coro(context: Context):
             args = [context]
 
-            for param, arg in zip_longest(params, context.words[1:]):
+            for param, arg, arg_eol in zip_longest(params,
+                                                   context.words[1:], context.words_eol[1:]):
                 if param is None:
                     # too many arguments provided
                     return context.reply(
@@ -229,9 +232,13 @@ def parametrize(params: str, usage: str):
                     raise NotImplementedError("Rat parameters are not implemented yet")
                 elif param.type == param.WORD:
                     args.append(arg)
+                elif param.type == param.TEXT:
+                    args.append(arg_eol)
 
             return await coro(*args)
+
         return new_coro
+
     return decorator
 
 
@@ -247,8 +254,10 @@ def _prettify_params(params: str) -> List[_Param]:
             pretty_params.append(_Param(_Param.RAT))
         elif param == "w":
             pretty_params.append(_Param(_Param.WORD))
+        elif param == "t":
+            pretty_params.append(_Param(_Param.TEXT))
         elif param == "?":
-            continue
+            continue  # was handled in the previous iteration
         else:
             raise ValueError("unrecognized command parameter: {}".format(param))
 
