@@ -97,7 +97,7 @@ async def trigger(ctx) -> Any:
 
 
 class _Param(object):
-    """Helper object used by `BaseCommandHandler.parametrize`"""
+    """Helper object used by `Commands.parametrize`"""
     CASE = 0
     FIND = 1
     RAT = 2
@@ -185,10 +185,10 @@ def parametrize(params: str, usage: str):
 
     Arguments:
         params: String of parameters which will each be translated into an argument. Some of these are TODO.
-            'c': Argument will be the `Rescue` object returned by `self.board.find`.
+            'c': Argument will be the `Rescue` object returned by `RescueBoard.find`.
             'C': Same as 'c', but creates the case if it doesn't exist.
-            'f': Same as 'c', but returning `(Rescue, bool)` as returned by `self.board.find`.
-            'F': Same as 'C', but returning `(Rescue, bool)` as returned by `self.board.find`.
+            'f': Same as 'c', but returning `(Rescue, bool)` as returned by `RescueBoard.find`.
+            'F': Same as 'C', but returning `(Rescue, bool)` as returned by `RescueBoard.find`.
             'r': Argument will be the `Rat` object found.
             'w': Argument will be a single word (separated by whitespace).
 
@@ -199,7 +199,7 @@ def parametrize(params: str, usage: str):
     Example:
         ``
         @parametrize("cc?")
-        async def some_command(bot, trigger, rescue1, rescue2_or_none_if_not_provided): pass
+        async def some_command(context, rescue1, rescue2_or_none_if_not_provided): pass
         ``
     """
     params = _prettify_params(params)
