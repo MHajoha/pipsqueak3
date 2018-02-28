@@ -13,7 +13,10 @@ This module is built on top of the Pydle system.
 """
 
 import logging
+from functools import wraps
 from typing import Callable, Any
+from itertools import zip_longest
+from typing import List
 
 from pydle import BasicClient
 
@@ -93,6 +96,21 @@ async def trigger(ctx) -> Any:
         log.debug(f"Ignoring message '{ctx.words_eol[0]}'. Not a command or rule.")
 
 
+class _Param(object):
+    """Helper object used by `BaseCommandHandler.parametrize`"""
+    CASE = 0
+    FIND = 1
+    RAT = 2
+    WORD = 3
+
+    def __init__(self, type: int, create: bool=False, optional: bool=False):
+        assert 0 <= type <= 3
+
+        self.type = type
+        self.create = create
+        self.optional = optional
+
+
 def _register(func, names: list or str) -> bool:
     """
     Register a new command
@@ -159,3 +177,84 @@ def command(*aliases):
         return func
 
     return real_decorator
+
+
+def parametrize(params: str, usage: str):
+    """
+    Provides underlying command coroutine with predictable and easy-to-use arguments.
+
+    Arguments:
+        params: String of parameters which will each be translated into an argument. Some of these are TODO.
+            'c': Argument will be the `Rescue` object returned by `self.board.find`.
+            'C': Same as 'c', but creates the case if it doesn't exist.
+            'f': Same as 'c', but returning `(Rescue, bool)` as returned by `self.board.find`.
+            'F': Same as 'C', but returning `(Rescue, bool)` as returned by `self.board.find`.
+            'r': Argument will be the `Rat` object found.
+            'w': Argument will be a single word (separated by whitespace).
+
+            '?': Marks the previous parameter as optional. If it isn't provided, don't complain. Optional parameters
+                may not precede mandatory ones. Argument will be None if not provided.
+        usage (str): String representing the correct usage of this command. Will be printed if it is used wrongly.
+
+    Example:
+        ``
+        @parametrize("cc?")
+        async def some_command(bot, trigger, rescue1, rescue2_or_none_if_not_provided): pass
+        ``
+    """
+    params = _prettify_params(params)
+
+    def decorator(coro):
+        @wraps(coro)
+        async def new_coro(context: Context):
+            args = [context]
+
+            for param, arg in zip_longest(params, context.words[1:]):
+                if param is None:
+                    # too many arguments provided
+                    return context.reply(
+                        f"usage: {config['commands']['prefix']}{context.words[0]} {usage}")
+                elif arg is None:
+                    # no more arguments provided
+                    if param.optional:
+                        args.append(None)
+                    else:
+                        return context.reply(
+                            f"usage: {config['commands']['prefix']}{context.words[0]} {usage}")
+
+                elif param.type in (param.CASE, param.FIND):
+                    # waiting on the rescue board for this
+                    raise NotImplementedError("Rescue parameters are not implemented yet")
+                elif param.type == param.RAT:
+                    raise NotImplementedError("Rat parameters are not implemented yet")
+                elif param.type == param.WORD:
+                    args.append(arg)
+
+            return await coro(*args)
+        return new_coro
+    return decorator
+
+
+def _prettify_params(params: str) -> List[_Param]:
+    """Helper method for `parametrize`"""
+    pretty_params = []
+    for i, param in enumerate(params):
+        if param in "cC":
+            pretty_params.append(_Param(_Param.CASE))
+        elif param in "fF":
+            pretty_params.append(_Param(_Param.FIND))
+        elif param == "r":
+            pretty_params.append(_Param(_Param.RAT))
+        elif param == "w":
+            pretty_params.append(_Param(_Param.WORD))
+        elif param == "?":
+            continue
+        else:
+            raise ValueError("unrecognized command parameter: {}".format(param))
+
+        if param in "CF":
+            pretty_params[-1].create = True
+        if i < len(params) - 1 and params[i + 1] == "?":
+            pretty_params[-1].optional = True
+
+    return pretty_params
