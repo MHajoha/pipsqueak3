@@ -13,7 +13,7 @@ from typing import Dict, Any, Union, Set
 
 from uuid import UUID
 
-from Modules.rat_rescue import Rescue, Quotation
+from Modules.rat_rescue import Rescue, Quotation, Rats
 from .api_handler import APIHandler
 from .websocket import WebsocketRequestHandler
 
@@ -58,11 +58,22 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         """Get rescue with the provided ID."""
         return (await self.get_rescues(id=id)).pop()
 
-    async def get_rats(self, **criteria):
+    async def get_rats(self, **criteria) -> Set[Rats]:
         """Get all rats from the API matching the criteria provided."""
+        data = self._make_serializable(criteria)
+        data["action"] = ("rats", "read")
 
-    async def get_rat_by_id(self, id: Union[str, UUID]):
+        response = await self._request(data)
+
+        results = set()
+        for json_rat in response["data"]:
+            results.add(self.rat_from_json(json_rat))
+
+        return results
+
+    async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
         """Get rat with the provided ID."""
+        return (await self.get_rats(id=id)).pop()
 
     async def _handle_update(self, data: dict, event: str):
         """Handle an update from the API."""
@@ -127,6 +138,16 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             mark_for_deletion=json["attributes"]["markedForDeletion"],
             lang_id=lang_id,
             rats=rats
+        )
+
+    @classmethod
+    def rat_from_json(cls, json: dict) -> Rats:
+        if json["type"] != "rats":
+            raise ValueError("JSON dict does not seem to represent a rat")
+
+        return Rats(
+            UUID(json["id"]),
+            json["attributes"]["name"]
         )
 
     @classmethod
