@@ -14,9 +14,9 @@ This module is built on top of the Pydle system.
 
 import logging
 from functools import wraps
-from typing import Callable, Any
+from typing import Callable, Any, List
 from itertools import zip_longest
-from typing import List
+from enum import Enum
 
 from pydle import BasicClient
 
@@ -96,20 +96,17 @@ async def trigger(ctx) -> Any:
         log.debug(f"Ignoring message '{ctx.words_eol[0]}'. Not a command or rule.")
 
 
-class _Param(object):
+class _Param(Enum):
     """Helper object used by `Commands.parametrize`"""
+    def __init__(self, *args, **kwargs):
+        self.optional = False
+        self.create = False
+
     CASE = 0
     FIND = 1
     RAT = 2
     WORD = 3
     TEXT = 4
-
-    def __init__(self, type: int, create: bool=False, optional: bool=False):
-        assert 0 <= type <= 4
-
-        self.type = type
-        self.create = create
-        self.optional = optional
 
 
 def _register(func, names: list or str) -> bool:
@@ -225,14 +222,14 @@ def parametrize(params: str, usage: str):
                         return context.reply(
                             f"usage: {config['commands']['prefix']}{context.words[0]} {usage}")
 
-                elif param.type in (param.CASE, param.FIND):
+                elif param in (_Param.CASE, _Param.FIND):
                     # waiting on the rescue board for this
                     raise NotImplementedError("Rescue parameters are not implemented yet")
-                elif param.type == param.RAT:
+                elif param == _Param.RAT:
                     raise NotImplementedError("Rat parameters are not implemented yet")
-                elif param.type == param.WORD:
+                elif param == _Param.WORD:
                     args.append(arg)
-                elif param.type == param.TEXT:
+                elif param == _Param.TEXT:
                     args.append(arg_eol)
 
             return await coro(*args)
@@ -247,15 +244,15 @@ def _prettify_params(params: str) -> List[_Param]:
     pretty_params = []
     for i, param in enumerate(params):
         if param in "cC":
-            pretty_params.append(_Param(_Param.CASE))
+            pretty_params.append(_Param.CASE)
         elif param in "fF":
-            pretty_params.append(_Param(_Param.FIND))
+            pretty_params.append(_Param.FIND)
         elif param == "r":
-            pretty_params.append(_Param(_Param.RAT))
+            pretty_params.append(_Param.RAT)
         elif param == "w":
-            pretty_params.append(_Param(_Param.WORD))
+            pretty_params.append(_Param.WORD)
         elif param == "t":
-            pretty_params.append(_Param(_Param.TEXT))
+            pretty_params.append(_Param.TEXT)
         elif param == "?":
             continue  # was handled in the previous iteration
         else:
