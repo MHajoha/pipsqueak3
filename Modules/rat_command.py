@@ -261,7 +261,7 @@ def _prettify_params(params: str) -> List[_Param]:
         [_Param]: Representation of parameters as a list of easy-to-use `_Param` objects.
     """
     pretty_params = []
-    for i, param in enumerate(params):
+    for param in params:
         if param == "?":
             if len(pretty_params) >= 1:
                 pretty_params[-1].optional = True
