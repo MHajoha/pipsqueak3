@@ -16,7 +16,6 @@ import logging
 from functools import wraps
 from typing import Callable, Any, List
 from itertools import zip_longest
-from enum import Enum
 
 from pydle import BasicClient
 
@@ -96,17 +95,28 @@ async def trigger(ctx) -> Any:
         log.debug(f"Ignoring message '{ctx.words_eol[0]}'. Not a command or rule.")
 
 
-class _Param(Enum):
+class _Param(object):
     """Helper object used by `Commands.parametrize`"""
-    def __init__(self, *args, **kwargs):
-        self.optional = False
-        self.create = False
+    def __init__(self, param_char: str, optional: bool=False, create: bool=False):
+        self.char = param_char
+        self.optional = optional
+        self.create = create
 
-    CASE = 0
-    FIND = 1
-    RAT = 2
-    WORD = 3
-    TEXT = 4
+    def __eq__(self, other):
+        if isinstance(other, _Param):
+            return self.char.lower() == other.char.lower() and \
+                   self.optional == other.optional and \
+                   self.create == other.create
+        elif isinstance(other, str):
+            return self.char.lower() == other.lower()
+        else:
+            return False
+
+    def __str__(self):
+        return "{}{}".format(
+            self.char.upper() if self.create else self.char.lower(),
+            '?' if self.optional else ""
+        )
 
 
 def _register(func, names: list or str) -> bool:
@@ -197,7 +207,7 @@ def parametrize(params: str, usage: str):
 
     Example:
         ``
-        @parametrize("cc?")
+        @parametrize("cc?", "<first case> <optional second case>")
         async def some_command(context, rescue1, rescue2_or_none_if_not_provided): pass
         ``
     """
@@ -208,8 +218,7 @@ def parametrize(params: str, usage: str):
         async def new_coro(context: Context):
             args = [context]
 
-            for param, arg, arg_eol in zip_longest(params,
-                                                   context.words[1:], context.words_eol[1:]):
+            for param, arg, arg_eol in zip_longest(params, context.words[1:], context.words_eol[1:]):
                 if param is None:
                     # too many arguments provided
                     return context.reply(
@@ -222,15 +231,17 @@ def parametrize(params: str, usage: str):
                         return context.reply(
                             f"usage: {config['commands']['prefix']}{context.words[0]} {usage}")
 
-                elif param in (_Param.CASE, _Param.FIND):
+                elif param in "cf":
                     # waiting on the rescue board for this
                     raise NotImplementedError("Rescue parameters are not implemented yet")
-                elif param == _Param.RAT:
+                elif param == "r":
                     raise NotImplementedError("Rat parameters are not implemented yet")
-                elif param == _Param.WORD:
+                elif param == "w":
                     args.append(arg)
-                elif param == _Param.TEXT:
+                elif param == "t":
                     args.append(arg_eol)
+                else:
+                    raise ValueError(f"unrecognized command parameter '{param}'")
 
             return await coro(*args)
 
@@ -240,27 +251,26 @@ def parametrize(params: str, usage: str):
 
 
 def _prettify_params(params: str) -> List[_Param]:
-    """Helper method for `parametrize`"""
+    """
+    Helper method for `parametrize`.
+
+    Arguments:
+        params (str): Raw parameter string as passed to the decorator.
+
+    Returns:
+        [_Param]: Representation of parameters as a list of easy-to-use `_Param` objects.
+    """
     pretty_params = []
     for i, param in enumerate(params):
-        if param in "cC":
-            pretty_params.append(_Param.CASE)
-        elif param in "fF":
-            pretty_params.append(_Param.FIND)
-        elif param == "r":
-            pretty_params.append(_Param.RAT)
-        elif param == "w":
-            pretty_params.append(_Param.WORD)
-        elif param == "t":
-            pretty_params.append(_Param.TEXT)
-        elif param == "?":
-            continue  # was handled in the previous iteration
+        if param == "?":
+            if len(pretty_params) >= 1:
+                pretty_params[-1].optional = True
+            else:
+                raise ValueError(f"got '?' modifier before parameter in {params}")
         else:
-            raise ValueError("unrecognized command parameter: {}".format(param))
+            pretty_params.append(_Param(param))
 
-        if param in "CF":
+        if param.isupper():
             pretty_params[-1].create = True
-        if i < len(params) - 1 and params[i + 1] == "?":
-            pretty_params[-1].optional = True
 
     return pretty_params
