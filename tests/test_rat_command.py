@@ -20,6 +20,7 @@ import pytest
 import Modules.rat_command as Commands
 from Modules.context import Context
 from Modules.rat_command import NameCollisionException
+from tests.mock_callables import AsyncCallableMock, InstanceOf
 
 
 @pytest.fixture
@@ -143,3 +144,56 @@ class TestRatCommand(object):
 
         ctx = await Context.from_message(bot_fx, "#unit_test", "unit_test", ftrigger)
         await Commands.trigger(ctx)
+
+    async def test_successful_parametrize(self, async_callable_fx: AsyncCallableMock, bot_fx):
+        """Verify that the parametrize decorator does what it should."""
+        fun = mock.MagicMock()
+        decorated = Commands.parametrize("wt", "some_usage")(asyncio.coroutine(fun))
+        decorated = Commands.command("wibbly")(decorated)
+
+        await Commands.trigger("!wibbly wobbly timey wimey", "unit_test", "#channel")
+
+        fun.assert_called_once()
+        assert fun.call_args[0][0] is Commands.bot
+        assert isinstance(fun.call_args[0][1], Trigger)
+        assert fun.call_args[0][2] == "wobbly"
+        assert fun.call_args[0][3] == "timey wimey"
+
+    async def test_too_few_args(self, async_callable_fx: AsyncCallableMock, bot_fx):
+        """
+        Verify that the parametrize decorator correctly prints out the command usage if the wrong
+        number of arguments is provided.
+        """
+        decorated = Commands.parametrize("ww", "some_usage")(async_callable_fx)
+        decorated = Commands.command("wibbly")(decorated)
+
+        context = await Context.from_message(bot_fx, "#channel", "unit_test",
+                                             "!wibbly wobbly")
+        await Commands.trigger(context)
+        assert {
+                   "target": "#channel",
+                   "message": "usage: !wibbly some_usage"
+               } in bot_fx.sent_messages
+
+    async def test_too_many_args(self, async_callable_fx: AsyncCallableMock, bot_fx):
+        decorated = Commands.parametrize("ww", "some_usage")(async_callable_fx)
+        decorated = Commands.command("wibbly")(decorated)
+
+        context = await Context.from_message(bot_fx, "#channel", "unit_test",
+                                             "!wibbly wobbly timey wimey")
+        await Commands.trigger(context)
+        assert {
+                   "target": "#channel",
+                   "message": "usage: !wibbly some_usage"
+               } in bot_fx.sent_messages
+
+    async def test_optional_parameter(self, async_callable_fx: AsyncCallableMock, bot_fx):
+        """Test that optional parameters are handled correctly."""
+        decorated = Commands.parametrize("ww?", "some_usage")(async_callable_fx)
+        decorated = Commands.command("cmd")(decorated)
+
+        context = await Context.from_message(bot_fx, "#channel", "unit_test", "!cmd arg")
+        await Commands.trigger(context)
+
+        assert async_callable_fx.was_called_once
+        assert async_callable_fx.was_called_with(bot_fx, context, "arg", None)

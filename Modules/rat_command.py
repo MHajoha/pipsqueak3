@@ -220,30 +220,33 @@ def parametrize(params: str, usage: str):
     Example:
         ``
         @parametrize("cc?", "<first case> <optional second case>")
-        async def some_command(bot, trigger, rescue1, rescue2_or_none_if_not_provided): pass
+        async def some_command(context, rescue1, rescue2_or_none_if_not_provided): pass
         ``
     """
-    params = cls._prettify_params(params)
+    params = _prettify_params(params)
 
     def decorator(coro):
         @wraps(coro)
-        async def new_coro(bot, trigger: Trigger, words: Sequence[str], words_eol: Sequence[str]):
-            args = [bot, trigger]
+        async def new_coro(context: Context):
+            args = [context]
 
-            for param, arg, arg_eol in zip_longest(params, words[1:], words_eol[1:]):
+            for param, arg, arg_eol in zip_longest(params,
+                                                   context.words[1:], context.words_eol[1:]):
                 if param is None:
                     if params[-1] == "t":
                         log.debug("Disregarding extra arguments as last parameter was text.")
                     else:
-                        log.debug(f"Command {words[0]} called with too many arguments.")
-                        return await trigger.reply(f"usage: {config.Commands.trigger}{words[0]} {usage}")
+                        log.debug(f"Command {context.words[0]} called with too many arguments.")
+                        return await context.reply(
+                            f"usage: {config.Commands.trigger}{context.words[0]} {usage}")
                 elif arg is None:
                     # no more arguments provided
                     if param.optional:
                         args.append(None)
                     else:
-                        log.debug(f"Mandatory parameter {param} was omitted in {words[0]}.")
-                        return await trigger.reply(f"usage: {config.Commands.trigger}{words[0]} {usage}")
+                        log.debug(f"Mandatory parameter {param} was omitted in {context.words[0]}.")
+                        return await context.reply(
+                            f"usage: {config.Commands.trigger}{context.words[0]} {usage}")
 
                 elif param.matches("cf"):
                     # waiting on the rescue board for this
