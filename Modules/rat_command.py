@@ -234,14 +234,14 @@ def parametrize(params: str, usage: str):
                                                    context.words[1:], context.words_eol[1:]):
                 if param is None:
                     # too many arguments provided
-                    return context.reply(
+                    return await context.reply(
                         f"usage: {config['commands']['prefix']}{context.words[0]} {usage}")
                 elif arg is None:
                     # no more arguments provided
                     if param.optional:
                         args.append(None)
                     else:
-                        return context.reply(
+                        return await context.reply(
                             f"usage: {config['commands']['prefix']}{context.words[0]} {usage}")
 
                 elif param.matches("cf"):
