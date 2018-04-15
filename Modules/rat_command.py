@@ -103,7 +103,9 @@ class _Param(object):
         self.create = create
 
     def __eq__(self, other):
-        if isinstance(other, _Param):
+        if self is other:
+            return True
+        elif isinstance(other, _Param):
             return self.char.lower() == other.char.lower() and \
                    self.optional == other.optional and \
                    self.create == other.create
@@ -117,6 +119,16 @@ class _Param(object):
             self.char.upper() if self.create else self.char.lower(),
             '?' if self.optional else ""
         )
+
+    def matches(self, params: str):
+        """
+        Example:
+            >>> _Param("b").matches("abc")
+            True
+            >>> _Param("c").matches("ab")
+            False
+        """
+        return self.char.lower() in params.lower()
 
 
 def _register(func, names: list or str) -> bool:
@@ -208,7 +220,7 @@ def parametrize(params: str, usage: str):
     Example:
         ``
         @parametrize("cc?", "<first case> <optional second case>")
-        async def some_command(context, rescue1, rescue2_or_none_if_not_provided): pass
+        async def some_command(bot, trigger, rescue1, rescue2_or_none_if_not_provided): pass
         ``
     """
     params = _prettify_params(params)
@@ -218,7 +230,8 @@ def parametrize(params: str, usage: str):
         async def new_coro(context: Context):
             args = [context]
 
-            for param, arg, arg_eol in zip_longest(params, context.words[1:], context.words_eol[1:]):
+            for param, arg, arg_eol in zip_longest(params,
+                                                   context.words[1:], context.words_eol[1:]):
                 if param is None:
                     # too many arguments provided
                     return context.reply(
@@ -231,7 +244,7 @@ def parametrize(params: str, usage: str):
                         return context.reply(
                             f"usage: {config['commands']['prefix']}{context.words[0]} {usage}")
 
-                elif param in "cf":
+                elif param.matches("cf"):
                     # waiting on the rescue board for this
                     raise NotImplementedError("Rescue parameters are not implemented yet")
                 elif param == "r":
