@@ -221,7 +221,8 @@ class WebsocketRequestHandler(ABC):
         """
         if request_id not in self._waiting_requests and \
                 request_id not in self._request_responses.keys():
-            raise APIError(f"Response {request_id} already consumed or request never queued")
+            raise APIError(f"Response to request {request_id} already consumed or request never "
+                           f"queued")
 
         for i in range(max_wait):
             if request_id in self._waiting_requests:
@@ -235,7 +236,7 @@ class WebsocketRequestHandler(ABC):
         try:
             response = self._request_responses.pop(request_id)
         except KeyError:
-            raise APIError(f"Response {request_id} already consumed by something else")
+            raise APIError(f"Response to request {request_id} not available")
 
         if "code" in response.keys():
             # API returned us an error code
