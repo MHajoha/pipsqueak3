@@ -6,7 +6,7 @@ import json
 from Modules.api.v20 import WebsocketAPIHandler20
 from Modules.api.v21 import WebsocketAPIHandler21
 
-@pytest.fixture(params=[WebsocketAPIHandler20, WebsocketAPIHandler21])
+@pytest.fixture(params=[WebsocketAPIHandler20, WebsocketAPIHandler21], ids=["v2.0", "v2.1"])
 def handler(request):
     """
     Fixture for API handler tests.
