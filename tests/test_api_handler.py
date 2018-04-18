@@ -1,6 +1,7 @@
 import asyncio
 import pytest
 import websockets
+import json
 
 from Modules.api.v20 import WebsocketAPIHandler20
 from Modules.api.v21 import WebsocketAPIHandler21
@@ -19,7 +20,7 @@ def handler(request):
             while len(self.incoming_messages) == 0:
                 await asyncio.sleep(0.1)
 
-            return self.incoming_messages.pop(0)
+            return json.dumps(self.incoming_messages.pop(0))
 
 
 
