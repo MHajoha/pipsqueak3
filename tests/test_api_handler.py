@@ -8,7 +8,28 @@ from Modules.api.v21 import WebsocketAPIHandler21
 
 @pytest.fixture(params=[WebsocketAPIHandler20, WebsocketAPIHandler21])
 def handler(request):
+    """
+    Fixture for API handler tests.
+    Replaces :fun:`websockets.connect` with a lambda returning the fake object.
+
+    Returns:
+        (APIHandler, function, function): A 3-tuple with the following content:
+            [0]: A handler instance. Not yet connected.
+            [1]: was_sent: A convenience function to test whether or not the aforementioned handler
+                sent a given json dict.
+            [2]: function: respond: A convenience function to fake a response from the server in the
+                mock websocket connection.
+
+    Example:
+        >>> async def my_test(handler):
+        >>>     handler, was_sent, function = handler
+        >>>     await handler.connect()
+
+    Read below for more information.
+    """
+
     class MockWebsocketConnection(object):
+        """Fake websocket connection object to be used with the below convenience functions."""
         def __init__(self):
             super().__init__()
             self.sent_messages = []
