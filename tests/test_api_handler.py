@@ -1,85 +1,75 @@
-import unittest
-
 import asyncio
-from aiounittest import async_test
+import pytest
+import websockets
 
-from Modules.api.v21 import WebsocketAPIHandler21
 from Modules.api.v20 import WebsocketAPIHandler20
-from Modules.api.exceptions import MismatchedVersionError
+from Modules.api.v21 import WebsocketAPIHandler21
 
-hostname_v20 = "api.fuelrats.com"
-hostname_v21 = "dev.api.fuelrats.com"
+@pytest.fixture(params=[WebsocketAPIHandler20, WebsocketAPIHandler21])
+def handler(request):
+    class MockWebsocketConnection(object):
+        host = ""
 
+        def __init__(self):
+            super().__init__()
+            self.sent_messages = []
+            self.incoming_messages = []
 
-class CommonAPIHandlerTest(unittest.TestCase):
-    """Tests spanning across multiple versions."""
-    @async_test
-    async def test_version(self):
-        handler20 = WebsocketAPIHandler20(hostname=hostname_v21)
-        handler21 = WebsocketAPIHandler21(hostname=hostname_v20)
+        async def recv(self):
+            while len(self.incoming_messages) == 0:
+                await asyncio.sleep(0.1)
 
-        with self.subTest("handler < api"):
-            with self.assertRaises(MismatchedVersionError):
-                await handler20.connect()
-
-        with self.subTest("handler > api"):
-            with self.assertRaises(MismatchedVersionError):
-                await handler21.connect()
-
-        if handler20.connected:
-            await handler20.disconnect()
-        if handler21.connected:
-            await handler21.disconnect()
+            return self.incoming_messages.pop(0)
 
 
-class APIHandlerTest20(unittest.TestCase):
-    """Test case for v2.0."""
-    hostname = hostname_v20
-    handler_class = WebsocketAPIHandler20
 
-    @classmethod
-    def setUpClass(cls):
-        # We need to decorate in here because aiounittest doesn't seem to like inheritance
-        cls.test_connection = async_test(cls.test_connection, asyncio.get_event_loop())
-        cls.test_request = async_test(cls.test_request, asyncio.get_event_loop())
+    original_connect = websockets.connect
+    websockets.connect = lambda *args, **kwargs: MockWebsocketConnection()
 
-    async def test_connection(self):
-        """Test that the connect, reconnect and disconnect methods work as intended."""
-        handler = self.handler_class(hostname=self.hostname)
+    instance = request.param("some_hostname", "some_token", "tls_or_not")
 
-        with self.subTest("connect"):
-            await handler.connect()
-            self.assertTrue(handler.connected)
-            self.assertIsNone(handler._token)
+    def was_sent(data: dict) -> bool:
+        """
+        Checks if the specified dict was sent (meta field will be excluded for comparison) and
+        removes it from the record if so.
+        """
+        for i, message in enumerate(instance._connection.sent_messages):
+            try:
+                message.pop("meta")
+            except KeyError:
+                pass
 
-        with self.subTest("reconnect"):
-            await handler.modify(token="sometoken")
-            self.assertTrue(handler.connected)
-            self.assertEqual(handler._token, "sometoken")
+            try:
+                data.pop("meta")
+            except KeyError:
+                pass
 
-        with self.subTest("disconnect"):
-            await handler.disconnect()
-            self.assertFalse(handler.connected)
-            self.assertTrue(handler._listener_task.done())
-
-    async def test_request(self):
-        """Test the _request method as far as we can without a token."""
-        handler = self.handler_class(hostname=self.hostname)
-
-        await handler.connect()
-        response = await handler._request({"action": ("version", "read")})
-
-        self.assertEqual(response.keys(),
-                         {"data", "meta"})
-        self.assertEqual(response["data"].keys(),
-                         {"id", "type", "attributes"})
-        self.assertEqual(response["data"]["attributes"].keys(),
-                         {"version", "commit", "branch", "tags", "date"})
-
-        await handler.disconnect()
+            if data == message:
+                instance._connection.sent_messages.pop(i)
+                return True
+        else:
+            return False
 
 
-class APIHandlerTest21(APIHandlerTest20):
-    """Test case for v2.1."""
-    hostname = hostname_v21
-    handler_class = WebsocketAPIHandler21
+    def respond(data: dict):
+        """
+        Queues the provided dict as a response to a previously made request. Only works when only
+        one request is waiting for a response.
+
+        Raises:
+             RuntimeError: If the above condition is not met.
+        """
+        if len(instance._waiting_requests) != 1:
+            raise RuntimeError
+        else:
+            instance._connection.incoming_messages.append(
+                {
+                    "meta": {
+                        "request_id": instance._waiting_requests.pop()
+                    }
+                }.update(data)
+            )
+
+    yield instance, was_sent, respond
+
+    websockets.connect = original_connect
