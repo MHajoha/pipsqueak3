@@ -9,12 +9,13 @@ from Modules.api.v21 import WebsocketAPIHandler21
 @pytest.fixture(params=[WebsocketAPIHandler20, WebsocketAPIHandler21])
 def handler(request):
     class MockWebsocketConnection(object):
-        host = ""
-
         def __init__(self):
             super().__init__()
             self.sent_messages = []
             self.incoming_messages = []
+
+            self.host = "some_host"
+            self.open = True
 
         async def recv(self):
             while len(self.incoming_messages) == 0:
@@ -22,6 +23,8 @@ def handler(request):
 
             return json.dumps(self.incoming_messages.pop(0))
 
+        async def close(self, reason):
+            self.open = False
 
 
     original_connect = websockets.connect
