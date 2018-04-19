@@ -92,3 +92,11 @@ class APIHandler(ABC):
         Take the JSON dict representing a rescue as returned by the API and construct a
         :class:`Rescue` object from it.
         """
+
+    @classmethod
+    @abstractmethod
+    def rat_from_json(cls, json: dict) -> Rats:
+        """
+        Take the JSON dict representing a rat as returned by the API and construct a
+        :class:`Rats` object from it.
+        """
