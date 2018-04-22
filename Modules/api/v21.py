@@ -10,10 +10,11 @@ See LICENSE.md
 """
 from typing import Set, Union
 
-from Modules.rat_rescue import Rescue, Quotation, Rats
 from uuid import UUID
 
 from Modules.api.v20 import WebsocketAPIHandler20
+from Modules.rat_rescue import Rescue
+from Modules.rats import Rats
 
 
 class WebsocketAPIHandler21(WebsocketAPIHandler20):

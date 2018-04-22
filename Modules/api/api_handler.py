@@ -13,8 +13,10 @@ from typing import Union, Set
 from abc import ABC, abstractmethod, abstractproperty
 from uuid import UUID
 
-from Modules.Rat_Board import RatBoard
-from Modules.rat_rescue import Rescue, Quotation
+from Modules.rat_board import RatBoard
+from Modules.rat_quotation import Quotation
+from Modules.rat_rescue import Rescue
+from Modules.rats import Rats
 from .exceptions import MismatchedVersionError
 
 

@@ -13,7 +13,9 @@ from typing import Dict, Any, Union, Set
 
 from uuid import UUID
 
-from Modules.rat_rescue import Rescue, Quotation, Rats
+from Modules.rat_quotation import Quotation
+from Modules.rat_rescue import Rescue
+from Modules.rats import Rats
 from .api_handler import APIHandler
 from .websocket import WebsocketRequestHandler
 
