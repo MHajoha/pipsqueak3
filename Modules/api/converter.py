@@ -18,7 +18,7 @@ def set_nested(dest: dict, key: str, value):
     current[split_keys[-1]] = value
 
 
-class Direction(Enum):
+class Retention(Enum):
     MODEL_ONLY = auto()
     JSON_ONLY = auto()
     BOTH = auto()
@@ -28,7 +28,7 @@ class Direction(Enum):
 class Field(object):
     def __init__(self, json_path: str, attribute_name: str=None, constructor_arg: str=None,
                  to_obj: Callable=None, to_json: Callable=None, default=None, optional=False,
-                 direction: Direction=Direction.BOTH):
+                 retention: Retention=Retention.BOTH):
         self.json_path = json_path
         self.attr_name = attribute_name
         self.constructor_arg = constructor_arg
