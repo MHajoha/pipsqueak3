@@ -25,9 +25,13 @@ class Retention(Enum):
     NONE = auto()
 
 
+class _NotSet:
+    pass
+
+
 class Field(object):
     def __init__(self, json_path: str, attribute_name: str=None, constructor_arg: str=None,
-                 to_obj: Callable=None, to_json: Callable=None, default=None, optional=False,
+                 to_obj: Callable=None, to_json: Callable=None, default=_NotSet, optional=False,
                  retention: Retention=Retention.BOTH):
         self.json_path = json_path
         self.attr_name = attribute_name
@@ -53,7 +57,7 @@ class Field(object):
         except KeyError as e:
             if isinstance(self.default, Field):
                 return self.default.from_json(json)
-            elif self.default is not None:
+            elif self.default is not _NotSet:
                 return self.default
             else:
                 raise KeyError(f"{self.json_path} not found in provided json dict") from e
