@@ -36,6 +36,7 @@ class Field(object):
         self.to_json = to_json
         self.default = default
         self.optional = optional
+        self.retention = retention
 
     def __set_name__(self, owner, name):
         if self.constructor_arg is None:
@@ -94,11 +95,12 @@ class Converter(ABC):
     def to_obj(cls, json: dict):
         constructor_args = {}
         for field in cls._fields():
-            result = field.from_json(json)
-            if result is None:
-                continue
-            else:
-                constructor_args[field.constructor_arg] = result
+            if field.retention in (Retention.MODEL_ONLY, Retention.BOTH):
+                result = field.from_json(json)
+                if result is None:
+                    continue
+                else:
+                    constructor_args[field.constructor_arg] = result
 
         return cls._klass(**constructor_args)
 
@@ -106,11 +108,12 @@ class Converter(ABC):
     def to_json(cls, obj) -> dict:
         json = {}
         for field in cls._fields():
-            result = field.from_model(obj)
-            if result is None:
-                continue
-            else:
-                set_nested(json, field.json_path, result)
+            if field.retention in (Retention.JSON_ONLY, Retention.BOTH):
+                result = field.from_model(obj)
+                if result is None:
+                    continue
+                else:
+                    set_nested(json, field.json_path, result)
 
         return json
 
@@ -119,8 +122,8 @@ class Converter(ABC):
         json = {}
         for key, value in criteria.items():
             field = cls._field_for_arg(key)
-
-            set_nested(json, field.json_path.replace("attributes.", ""),
-                       field.from_search_criteria(value))
+            if field.retention in (Retention.JSON_ONLY, Retention.BOTH):
+                set_nested(json, field.json_path.replace("attributes.", ""),
+                           field.from_search_criteria(value))
 
         return json
