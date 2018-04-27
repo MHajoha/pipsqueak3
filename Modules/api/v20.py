@@ -13,11 +13,48 @@ from typing import Dict, Any, Union, Set
 
 from uuid import UUID
 
+import functools
+
+from Modules.api.converter import Converter, Field, Retention
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
 from .api_handler import APIHandler
 from .websocket import WebsocketRequestHandler
+
+
+class QuotationConverter(Converter, klass=Quotation):
+    datetime_to_str = functools.partial(datetime.strftime, fmt="%Y-%m-%dT%H:%M:%S.%f")
+    str_to_datetime = functools.partial(datetime.strptime, format="%Y-%m-%dT%H:%M:%S.%f")
+
+    message = Field("message")
+    author = Field("author")
+    created_at = Field("createdAt", to_obj=str_to_datetime, to_json=datetime_to_str),
+    updated_at = Field("updatedAt", to_obj=str_to_datetime, to_json=datetime_to_str),
+    last_author = Field("lastAuthor")
+
+class RescueConverter(Converter, klass=Rescue):
+    datetime_to_str = functools.partial(datetime.strftime, fmt="%Y-%m-%dT%H:%M:%S.%fZ")
+    str_to_datetime = functools.partial(datetime.strptime, format="%Y-%m-%dT%H:%M:%S.%fZ")
+
+    case_id = Field("id", to_obj=UUID, to_json=str)
+    client = Field("attributes.client")
+    system = Field("attributes.system")
+    irc_nickname = Field("attributes.data.IRCNick", default=client)
+    created_at = Field("attributes.createdAt", to_obj=str_to_datetime, to_json=datetime_to_str)
+    updated_at = Field("attributes.updatedAt", to_obj=str_to_datetime, to_json=datetime_to_str)
+    unidentified_rats = Field("attributes.unidentifiedRats")
+    quotes = Field("attributes.quotes", to_obj=lambda quotes: list(map(QuotationConverter.to_obj, quotes)),
+                 to_json=lambda quotes: list(map(QuotationConverter.to_json, quotes)))
+    is_open = Field("attributes.status", to_obj=lambda status: status in ("open", "inactive"))
+    epic = Field("relationships.epics.data", to_obj=lambda epics: len(epics) > 0, retention=Retention.MODEL_ONLY)
+    title = Field("attributes.title")
+    code_red = Field("attributes.codeRed")
+    first_limpet = Field("attributes.firstLimpetId", to_obj=UUID, to_json=str)
+    board_index = Field("attributes.data.boardIndex", default=None, optional=True),
+    mark_for_deletion = Field("attributes.data.markedForDeletion"),
+    lang_id = Field("attributes.data.langID"),
+    rats = Field("relationships.rats.data")
 
 
 class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
@@ -89,13 +126,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         Take the JSON dict representing a case json (from !inject) as returned by the API and
         construct a :class:`Quotation` object from it.
         """
-        return Quotation(
-            json["message"],
-            json["author"],
-            datetime.strptime(json["createdAt"], "%Y-%m-%dT%H:%M:%S.%f"),
-            datetime.strptime(json["updatedAt"], "%Y-%m-%dT%H:%M:%S.%f"),
-            json["lastAuthor"]
-        )
+        return QuotationConverter.to_obj(json)
 
     @classmethod
     def rescue_from_json(cls, json: dict) -> Rescue:
@@ -104,43 +135,10 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         :class:`Rescue` object from it.
         """
 
-        if json["type"] != "rescues":
+        if json["type"] == "rescues":
+            return RescueConverter.to_obj(json)
+        else:
             raise ValueError("JSON dict does not seem to represent a rescue")
-
-        irc_nickname = json["attributes"]["data"].get("IRCNick", json["attributes"]["client"])
-        board_index = json["attributes"]["data"].get("boardIndex", None)
-        lang_id = json["attributes"]["data"].get("langID", "en")
-
-        created_at = datetime.strptime(json["attributes"]["createdAt"],
-                                       "%Y-%m-%dT%H:%M:%S.%fZ")
-
-        updated_at = datetime.strptime(json["attributes"]["updatedAt"],
-                                       "%Y-%m-%dT%H:%M:%S.%fZ")
-
-        quotes = [cls.quotation_from_json(quote) for quote in json["attributes"]["quotes"]]
-        rats = [UUID(rat["id"]) for rat in json["relationships"]["rats"]["data"]]
-
-        return Rescue(
-            case_id=json["id"],
-            client=json["attributes"]["client"],
-            system=json["attributes"]["system"],
-            irc_nickname=irc_nickname,
-            created_at=created_at,
-            updated_at=updated_at,
-            unidentified_rats=json["attributes"]["unidentifiedRats"],
-            active=json["attributes"]["status"] == "open",
-            quotes=quotes,
-            is_open=json["attributes"]["status"] in ("open", "inactive"),
-            epic=len(json["relationships"]["epics"]) > 0,
-            code_red=json["attributes"]["codeRed"],
-            successful=json["attributes"]["outcome"] == "success",
-            title=json["attributes"]["title"],
-            first_limpet=UUID(json["attributes"]["firstLimpetId"]),
-            board_index=board_index,
-            mark_for_deletion=json["attributes"]["markedForDeletion"],
-            lang_id=lang_id,
-            rats=rats
-        )
 
     @classmethod
     def rat_from_json(cls, json: dict) -> Rats:
