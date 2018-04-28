@@ -90,7 +90,7 @@ def handler(request):
             instance._connection.incoming_messages.append(
                 {
                     "meta": {
-                        "request_id": instance._waiting_requests.pop()
+                        "request_id": next(iter(instance._waiting_requests))
                     }
                 }.update(data)
             )
