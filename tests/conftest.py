@@ -334,26 +334,40 @@ def handler_fx(request):
             [0]: A handler instance. Not yet connected.
             [1]: was_sent: A convenience function to test whether or not the aforementioned handler
                 sent a given json dict.
-            [2]: function: respond: A convenience function to fake a response from the server in the
+            [2]: function: queue_response: A convenience function to fake a response from the server in the
                 mock websocket connection.
 
     Example:
         >>> async def my_test(handler_fx):
-        ...     handler, was_sent, function = handler_fx
-        ...     await handler_fx.connect()
+        ...     handler, was_sent, queue_response = handler_fx
+        ...     await handler.connect()
 
     Read below for more information.
     """
 
     class MockWebsocketConnection(object):
         """Fake websocket connection object to be used with the below convenience functions."""
-        def __init__(self):
+        def __init__(self, handler_instance: WebsocketAPIHandler20):
             super().__init__()
             self.sent_messages = []
             self.incoming_messages = []
+            self.response: dict = None
+            self.handler = handler_instance
 
             self.host = "some_host"
             self.open = True
+
+        async def send(self, data: dict):
+            self.sent_messages.append(data)
+            if self.response:
+                try:
+                    data.setdefault("meta", {})["request_id"] = next(iter(
+                        self.handler._waiting_requests
+                    ))
+                except KeyError:
+                    pass
+                else:
+                    self.incoming_messages.append(data)
 
         async def recv(self):
             while len(self.incoming_messages) == 0:
@@ -365,9 +379,8 @@ def handler_fx(request):
             self.open = False
 
     original_connect = websockets.connect
-    websockets.connect = lambda *args, **kwargs: MockWebsocketConnection()
-
     instance = request.param("some_hostname", "some_token", "tls_or_not")
+    websockets.connect = lambda *args, **kwargs: MockWebsocketConnection(instance)
 
     def was_sent(data: dict) -> bool:
         """
@@ -391,7 +404,7 @@ def handler_fx(request):
         else:
             return False
 
-    def respond(data: dict):
+    def queue_response(data: dict):
         """
         Queues the provided dict as a response to a previously made request. Only works when only
         one request is waiting for a response.
@@ -402,14 +415,8 @@ def handler_fx(request):
         if len(instance._waiting_requests) != 1:
             raise RuntimeError
         else:
-            instance._connection.incoming_messages.append(
-                {
-                    "meta": {
-                        "request_id": next(iter(instance._waiting_requests))
-                    }
-                }.update(data)
-            )
+            instance._connection.response = data
 
-    yield instance, was_sent, respond
+    yield instance, was_sent, queue_response
 
     websockets.connect = original_connect
