@@ -25,6 +25,7 @@ class MockWebsocketConnection(object):
                 pass
             else:
                 self.incoming_messages.append(data)
+                self.response = None
 
     async def recv(self):
         while len(self.incoming_messages) == 0:
