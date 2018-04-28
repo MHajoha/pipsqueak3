@@ -334,8 +334,9 @@ def handler_fx(request):
             [0]: A handler instance. Not yet connected.
             [1]: was_sent: A convenience function to test whether or not the aforementioned handler
                 sent a given json dict.
-            [2]: function: queue_response: A convenience function to fake a response from the server in the
-                mock websocket connection.
+            [2]: queue_response: A convenience function to fake a response from the server in the
+                mock websocket connection. The provided response will be used when `send` is next
+                called.
 
     Example:
         >>> async def my_test(handler_fx):
@@ -406,8 +407,8 @@ def handler_fx(request):
 
     def queue_response(data: dict):
         """
-        Queues the provided dict as a response to a previously made request. Only works when only
-        one request is waiting for a response.
+        Queues the provided dict as a response to the next request. Only works when only one request
+        is waiting for a response.
 
         Raises:
              RuntimeError: If the above condition is not met.
