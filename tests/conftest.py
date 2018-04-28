@@ -22,6 +22,7 @@ from uuid import uuid4, UUID
 import psycopg2
 import psycopg2.pool
 import websockets
+import datetime
 import pytest
 
 # from psycopg2.pool import SimpleConnectionPool
@@ -45,6 +46,7 @@ from Modules.permissions import Permission
 from tests.mock_bot import MockBot
 from Modules.api import WebsocketAPIHandler20, WebsocketAPIHandler21
 from Modules.rat_board import RatBoard
+from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rat import Rat
 from utils.ratlib import Platforms
@@ -348,6 +350,7 @@ def handler_fx(request):
 
     class MockWebsocketConnection(object):
         """Fake websocket connection object to be used with the below convenience functions."""
+
         def __init__(self, handler_instance: WebsocketAPIHandler20):
             super().__init__()
             self.sent_messages = []
@@ -421,3 +424,131 @@ def handler_fx(request):
     yield instance, was_sent, queue_response
 
     websockets.connect = original_connect
+
+
+@pytest.fixture
+def rescue_fx():
+    """
+    This fixture provides a relatively complete rescue in both json format (v2 standard) and as a
+    Rescue object.
+    """
+    json_rescue = {
+        "meta": {
+            "count": 1,
+            "limit": 25,
+            "offset": 0,
+            "total": 1
+        },
+        "data": [
+            {
+                "id": "bede70e3-a695-448a-8376-ecbcf74385b6",
+                "type": "rescues",
+                "attributes": {
+                    "client": "Some Client",
+                    "codeRed": False,
+                    "data": {
+                        "langID": "en",
+                        "status": {},
+                        "IRCNick": "Some_Client",
+                        "boardIndex": 9,
+                        "markedForDeletion": {
+                            "marked": False,
+                            "reason": "None.",
+                            "reporter": "Noone."
+                        }
+                    },
+                    "notes": "Friendly client had run out of fuel in his Farragut Battle Cruiser. DB appreciated.",
+                    "platform": "pc",
+                    "quotes": [
+                        {
+                            "author": "Mecha",
+                            "message": "RATSIGNAL - CMDR Some Client - System: Alpha Centauri - Platform: PC - O2: OK - Language: English (en-GB) - IRC Nickname: Some_Client",
+                            "createdAt": "2018-01-07T22:48:38.123456",
+                            "updatedAt": "2018-01-07T22:48:38.123456",
+                            "lastAuthor": "Mecha"
+                        },
+                        {
+                            "author": "Mecha",
+                            "message": "[Autodetected system: Alpha Centauri]",
+                            "createdAt": "2018-01-07T22:48:38.123458",
+                            "updatedAt": "2018-01-07T22:48:38.123458",
+                            "lastAuthor": "Mecha"
+                        }
+                    ],
+                    "status": "open",
+                    "system": "ALPHA CENTAURI",
+                    "title": None,
+                    "outcome": "success",
+                    "unidentifiedRats": ["unable_to_use_nickserv[PC]"],
+                    "createdAt": "2018-01-07T22:48:38.123Z",
+                    "updatedAt": "2018-01-08T10:34:40.123Z",
+                    "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"
+                },
+                "relationships": {
+                    "rats": {
+                        "data": [
+                            {"id": "dc9c91fb-9ead-47e9-8771-81da2c1971bc", "type": "rats"},
+                            {"id": "aa42e51c-5e55-4261-9958-6f1743957d70", "type": "rats"}
+                        ]
+                    },
+                    "firstLimpet": {
+                        "data": {
+                            "id": "dc9c91fb-9ead-47e9-8771-81da2c1971bc",
+                            "type": "rats"
+                        }
+                    },
+                    "epics": {
+                        "data": []
+                    }
+                },
+                "links": {
+                    "self": "/rescues/bede70e3-a695-448a-8376-ecbcf74385b6"
+                }
+            }
+        ]
+    }
+
+    model_rescue = Rescue(
+        UUID("bede70e3-a695-448a-8376-ecbcf74385b6"),
+        client="Some Client",
+        system="ALPHA CENTAURI",
+        irc_nickname="Some_Client",
+        created_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123),
+        updated_at=datetime.datetime(2018, 1, 8, 10, 34, 40, 123),
+        unidentified_rats=["unable_to_use_nickserv[PC]"],
+        quotes=[
+            Quotation(
+                message="RATSIGNAL - CMDR Some Client - System: Alpha Centauri - Platform: PC - O2: OK - Language: English (en-GB) - IRC Nickname: Some_Client",
+                author="Mecha",
+                created_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123456),
+                updated_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123456),
+                last_author="Mecha"
+            ),
+            Quotation(
+                message="[Autodetected system: Alpha Centauri]",
+                author="Mecha",
+                created_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123458),
+                updated_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123458),
+                last_author="Mecha"
+            )
+        ],
+        title=None,
+        first_limpet=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc"),
+        board_index=9,
+        mark_for_deletion=MarkForDeletion(False, None, None),
+        lang_id="en",
+        rats=[
+            Rat(
+                uuid=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc"),
+                name="Rat1",
+                platform=Platforms.PC,
+            ),
+            Rat(
+                uuid=UUID("aa42e51c-5e55-4261-9958-6f1743957d70"),
+                name="Rat2",
+                platform=Platforms.PC
+            )
+        ]
+    )
+
+    return json_rescue, model_rescue
