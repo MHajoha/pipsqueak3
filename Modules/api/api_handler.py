@@ -72,11 +72,11 @@ class APIHandler(ABC):
         """Get rescue with the provided ID."""
 
     @abstractmethod
-    async def get_rats(self, **criteria):
+    async def get_rats(self, **criteria) -> Set[Rats]:
         """Get all rats from the API matching the criteria provided."""
 
     @abstractmethod
-    async def get_rat_by_id(self, id: Union[str, UUID]):
+    async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
         """Get rat with the provided ID."""
 
     @classmethod
