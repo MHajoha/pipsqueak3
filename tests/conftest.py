@@ -382,46 +382,34 @@ def handler_fx(request):
         async def close(self, reason):
             self.open = False
 
-    original_connect = websockets.connect
+        def was_sent(self, data: dict) -> bool:
+            """
+            Checks if the specified dict was sent (meta field will be excluded for comparison) and
+            removes it from the record if so.
+            """
+            for i, message in enumerate(self.sent_messages):
+                try:
+                    message.pop("meta")
+                except KeyError:
+                    pass
+
+                try:
+                    data.pop("meta")
+                except KeyError:
+                    pass
+
+                if data == message:
+                    self.sent_messages.pop(i)
+                    return True
+            else:
+                return False
+
     instance = request.param("some_hostname", "some_token", "tls_or_not")
-    websockets.connect = lambda *args, **kwargs: MockWebsocketConnection(instance)
+    connection = MockWebsocketConnection(instance)
+    original_connect = websockets.connect
+    websockets.connect = lambda *args, **kwargs: connection
 
-    def was_sent(data: dict) -> bool:
-        """
-        Checks if the specified dict was sent (meta field will be excluded for comparison) and
-        removes it from the record if so.
-        """
-        for i, message in enumerate(instance._connection.sent_messages):
-            try:
-                message.pop("meta")
-            except KeyError:
-                pass
-
-            try:
-                data.pop("meta")
-            except KeyError:
-                pass
-
-            if data == message:
-                instance._connection.sent_messages.pop(i)
-                return True
-        else:
-            return False
-
-    def queue_response(data: dict):
-        """
-        Queues the provided dict as a response to the next request. Only works when only one request
-        is waiting for a response.
-
-        Raises:
-             RuntimeError: If the above condition is not met.
-        """
-        if len(instance._waiting_requests) != 1:
-            raise RuntimeError
-        else:
-            instance._connection.response = data
-
-    yield instance, was_sent, queue_response
+    yield instance, connection
 
     websockets.connect = original_connect
 
