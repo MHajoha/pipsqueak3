@@ -200,8 +200,8 @@ class WebsocketRequestHandler(ABC):
         else:
             data["meta"] = {"request_id": str(request_id)}
 
-        await self._send_raw(data)
         self._waiting_requests.add(request_id)
+        await self._send_raw(data)
         return await self._retrieve_response(request_id)
 
     async def _retrieve_response(self, request_id: UUID, max_wait: int=600) -> Dict[str, Any]:
