@@ -81,7 +81,7 @@ class APIHandler(ABC):
 
     @classmethod
     @abstractmethod
-    def quotation_from_json(cls, json: dict) -> Quotation:
+    async def quotation_from_json(cls, json: dict) -> Quotation:
         """
         Take the JSON dict representing a case quote (from !inject) as returned by the API and
         construct a :class:`Quotation` object from it.
@@ -89,7 +89,7 @@ class APIHandler(ABC):
 
     @classmethod
     @abstractmethod
-    def rescue_from_json(cls, json: dict) -> Rescue:
+    async def rescue_from_json(cls, json: dict) -> Rescue:
         """
         Take the JSON dict representing a rescue as returned by the API and construct a
         :class:`Rescue` object from it.
@@ -97,7 +97,7 @@ class APIHandler(ABC):
 
     @classmethod
     @abstractmethod
-    def rat_from_json(cls, json: dict) -> Rats:
+    async def rat_from_json(cls, json: dict) -> Rats:
         """
         Take the JSON dict representing a rat as returned by the API and construct a
         :class:`Rats` object from it.

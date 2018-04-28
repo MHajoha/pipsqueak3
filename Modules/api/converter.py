@@ -2,6 +2,9 @@ from abc import ABC
 from enum import Enum, auto
 from typing import Callable, Iterator
 
+import asyncio
+
+
 def get_nested(source: dict, key: str):
     current = source
     for subkey in key.split("."):
@@ -48,24 +51,28 @@ class Field(object):
         if self.attr_name is None:
             self.attr_name = name
 
-    def from_json(self, json: dict):
+    async def from_json(self, json: dict):
         try:
             if self.to_obj is None:
                 return get_nested(json, self.json_path)
+            elif asyncio.iscoroutinefunction(self.to_obj):
+                return await self.to_obj(get_nested(json, self.json_path))
             else:
                 return self.to_obj(get_nested(json, self.json_path))
         except KeyError as e:
             if isinstance(self.default, Field):
-                return self.default.from_json(json)
+                return await self.default.from_json(json)
             elif self.default is not _NotSet:
                 return self.default
             else:
                 raise KeyError(f"{self.json_path} not found in provided json dict") from e
 
-    def from_model(self, obj):
+    async def from_model(self, obj):
         try:
             if self.to_json is None:
                 return getattr(obj, self.attr_name)
+            elif asyncio.iscoroutinefunction(self.to_json):
+                return await self.to_obj(getattr(obj, self.attr_name))
             else:
                 return self.to_obj(getattr(obj, self.attr_name))
         except AttributeError as e:
@@ -74,9 +81,11 @@ class Field(object):
             else:
                 raise KeyError(f"provided object does not have attribute {self.attr_name}") from e
 
-    def from_search_criteria(self, value):
+    async def from_search_criteria(self, value):
         if self.to_json is None:
             return value
+        elif asyncio.iscoroutinefunction(self.to_json):
+            return await self.to_json(value)
         else:
             return self.to_json(value)
 
@@ -96,11 +105,11 @@ class Converter(ABC):
         return next(filter(lambda field: field.constructor_arg == arg, cls._fields()))
 
     @classmethod
-    def to_obj(cls, json: dict):
+    async def to_obj(cls, json: dict):
         constructor_args = {}
         for field in cls._fields():
             if field.retention in (Retention.MODEL_ONLY, Retention.BOTH):
-                result = field.from_json(json)
+                result = await field.from_json(json)
                 if result is None:
                     continue
                 else:
@@ -109,11 +118,11 @@ class Converter(ABC):
         return cls._klass(**constructor_args)
 
     @classmethod
-    def to_json(cls, obj) -> dict:
+    async def to_json(cls, obj) -> dict:
         json = {}
         for field in cls._fields():
             if field.retention in (Retention.JSON_ONLY, Retention.BOTH):
-                result = field.from_model(obj)
+                result = await field.from_model(obj)
                 if result is None:
                     continue
                 else:
@@ -122,12 +131,12 @@ class Converter(ABC):
         return json
 
     @classmethod
-    def to_search_parameters(cls, criteria: dict) -> dict:
+    async def to_search_parameters(cls, criteria: dict) -> dict:
         json = {}
         for key, value in criteria.items():
             field = cls._field_for_arg(key)
             if field.retention in (Retention.JSON_ONLY, Retention.BOTH):
                 set_nested(json, field.json_path.replace("attributes.", ""),
-                           field.from_search_criteria(value))
+                           await field.from_search_criteria(value))
 
         return json

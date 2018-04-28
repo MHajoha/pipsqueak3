@@ -121,27 +121,27 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
                 self.board.from_api(self.rescue_from_json(rescue_json))
 
     @classmethod
-    def quotation_from_json(cls, json: dict) -> Quotation:
+    async def quotation_from_json(cls, json: dict) -> Quotation:
         """
         Take the JSON dict representing a case json (from !inject) as returned by the API and
         construct a :class:`Quotation` object from it.
         """
-        return QuotationConverter.to_obj(json)
+        return await QuotationConverter.to_obj(json)
 
     @classmethod
-    def rescue_from_json(cls, json: dict) -> Rescue:
+    async def rescue_from_json(cls, json: dict) -> Rescue:
         """
         Take the JSON dict representing a rescue as returned by the API and construct a
         :class:`Rescue` object from it.
         """
 
         if json["type"] == "rescues":
-            return RescueConverter.to_obj(json)
+            return await RescueConverter.to_obj(json)
         else:
             raise ValueError("JSON dict does not seem to represent a rescue")
 
     @classmethod
-    def rat_from_json(cls, json: dict) -> Rats:
+    async def rat_from_json(cls, json: dict) -> Rats:
         if json["type"] != "rats":
             raise ValueError("JSON dict does not seem to represent a rat")
 
