@@ -29,8 +29,8 @@ class MockWebsocketConnection(object):
                 self.response.setdefault("meta", {})["request_id"] = next(iter(
                     self.handler._waiting_requests
                 ))
-            except KeyError:
-                pass
+            except StopIteration:
+                pass # No waiting requests
             else:
                 self.incoming_messages.append(self.response)
                 self.response = None
