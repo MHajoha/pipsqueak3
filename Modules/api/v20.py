@@ -13,8 +13,6 @@ from typing import Dict, Any, Union, Set
 
 from uuid import UUID
 
-import functools
-
 from Modules.api.converter import Converter, Field, Retention
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
@@ -24,8 +22,8 @@ from .websocket import WebsocketRequestHandler
 
 
 class QuotationConverter(Converter, klass=Quotation):
-    datetime_to_str = functools.partial(datetime.strftime, fmt="%Y-%m-%dT%H:%M:%S.%f")
-    str_to_datetime = functools.partial(datetime.strptime, format="%Y-%m-%dT%H:%M:%S.%f")
+    datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    str_to_datetime = lambda string: datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ")
 
     message = Field("message")
     author = Field("author")
@@ -34,8 +32,8 @@ class QuotationConverter(Converter, klass=Quotation):
     last_author = Field("lastAuthor")
 
 class RescueConverter(Converter, klass=Rescue):
-    datetime_to_str = functools.partial(datetime.strftime, fmt="%Y-%m-%dT%H:%M:%S.%fZ")
-    str_to_datetime = functools.partial(datetime.strptime, format="%Y-%m-%dT%H:%M:%S.%fZ")
+    datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    str_to_datetime = lambda string: datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ")
 
     case_id = Field("id", to_obj=UUID, to_json=str)
     client = Field("attributes.client")
