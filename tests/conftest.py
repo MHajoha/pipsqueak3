@@ -348,8 +348,12 @@ def handler_fx(request):
     """
     instance = request.param("some_hostname", "some_token", "tls_or_not")
     connection = MockWebsocketConnection(instance)
+
+    async def fake_connect(*args, **kwargs):
+        return connection
+
     original_connect = websockets.connect
-    websockets.connect = lambda *args, **kwargs: connection
+    websockets.connect = fake_connect
 
     yield instance, connection
 
