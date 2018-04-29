@@ -30,7 +30,7 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
 
         results = set()
         for json_rescue in response["data"]:
-            results.add(self.rescue_from_json(json_rescue))
+            results.add(await self.rescue_from_json(json_rescue))
 
         return results
 
@@ -41,7 +41,7 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
             "id": str(id)
         })
 
-        return self.rescue_from_json(response["data"][0])
+        return await self.rescue_from_json(response["data"][0])
 
     async def get_rats(self, **criteria) -> Set[Rats]:
         data = self._make_serializable(criteria)
@@ -51,7 +51,7 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
 
         results = set()
         for json_rescue in response["data"]:
-            results.add(self.rescue_from_json(json_rescue))
+            results.add(await self.rescue_from_json(json_rescue))
 
         return results
 
@@ -61,4 +61,4 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
             "id": str(id)
         })
 
-        return self.rat_from_json(response["data"][0])
+        return await self.rat_from_json(response["data"][0])

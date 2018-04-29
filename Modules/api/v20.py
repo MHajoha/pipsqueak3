@@ -17,6 +17,7 @@ from Modules.api.converter import Converter, Field, Retention
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
+from ratlib.names import Status
 from .api_handler import APIHandler
 from .websocket import WebsocketRequestHandler
 
@@ -39,13 +40,22 @@ class RescueConverter(Converter, klass=Rescue):
     client = Field("attributes.client")
     system = Field("attributes.system")
     irc_nickname = Field("attributes.data.IRCNick", default=client)
-    created_at = Field("attributes.createdAt", to_obj=str_to_datetime, to_json=datetime_to_str)
-    updated_at = Field("attributes.updatedAt", to_obj=str_to_datetime, to_json=datetime_to_str)
+    created_at = Field("attributes.createdAt",
+                       to_obj=str_to_datetime,
+                       to_json=datetime_to_str)
+    updated_at = Field("attributes.updatedAt",
+                       to_obj=str_to_datetime,
+                       to_json=datetime_to_str)
     unidentified_rats = Field("attributes.unidentifiedRats")
-    quotes = Field("attributes.quotes", to_obj=lambda quotes: list(map(QuotationConverter.to_obj, quotes)),
-                 to_json=lambda quotes: list(map(QuotationConverter.to_json, quotes)))
-    is_open = Field("attributes.status", to_obj=lambda status: status in ("open", "inactive"))
-    epic = Field("relationships.epics.data", to_obj=lambda epics: len(epics) > 0, retention=Retention.MODEL_ONLY)
+    quotes = Field("attributes.quotes",
+                   to_obj=lambda quotes: list(map(QuotationConverter.to_obj, quotes)),
+                   to_json=lambda quotes: list(map(QuotationConverter.to_json, quotes)))
+    status = Field("attributes.status",
+                   to_obj=lambda string: Status[string.upper()],
+                   to_json=lambda status: status.name.lower())
+    epic = Field("relationships.epics.data",
+                 to_obj=lambda epics: len(epics) > 0,
+                 retention=Retention.MODEL_ONLY)
     title = Field("attributes.title")
     code_red = Field("attributes.codeRed")
     first_limpet = Field("attributes.firstLimpetId", to_obj=UUID, to_json=str)
@@ -87,7 +97,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
         results = set()
         for json_rescue in response["data"]:
-            results.add(self.rescue_from_json(json_rescue))
+            results.add(await self.rescue_from_json(json_rescue))
 
         return results
 
@@ -104,7 +114,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
         results = set()
         for json_rat in response["data"]:
-            results.add(self.rat_from_json(json_rat))
+            results.add(await self.rat_from_json(json_rat))
 
         return results
 
@@ -116,7 +126,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         """Handle an update from the API."""
         if event == "rescueUpdated":
             for rescue_json in data["data"]:
-                self.board.from_api(self.rescue_from_json(rescue_json))
+                self.board.from_api(await self.rescue_from_json(rescue_json))
 
     @classmethod
     async def quotation_from_json(cls, json: dict) -> Quotation:
