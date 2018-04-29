@@ -51,9 +51,9 @@ class RescueConverter(Converter, klass=Rescue):
     title = Field("attributes.title")
     code_red = Field("attributes.codeRed")
     first_limpet = Field("attributes.firstLimpetId", to_obj=UUID, to_json=str)
-    board_index = Field("attributes.data.boardIndex", default=None, optional=True),
-    mark_for_deletion = Field("attributes.data.markedForDeletion"),
-    lang_id = Field("attributes.data.langID"),
+    board_index = Field("attributes.data.boardIndex", default=None, optional=True)
+    mark_for_deletion = Field("attributes.data.markedForDeletion")
+    lang_id = Field("attributes.data.langID")
     rats = Field("relationships.rats.data")
 
 
@@ -82,7 +82,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
     async def get_rescues(self, **criteria) -> Set[Rescue]:
         """Get all rescues from the API matching the criteria provided."""
-        data = self._make_serializable(criteria)
+        data = await RescueConverter.to_search_parameters(criteria)
         data["action"] = ("rescues", "read")
 
         response = await self._request(data)
