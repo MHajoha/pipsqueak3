@@ -204,23 +204,25 @@ def parametrize(params: str, usage: str):
     Provides underlying command coroutine with predictable and easy-to-use arguments.
 
     Arguments:
-        params: String of parameters which will each be translated into an argument. Some of these are TODO.
-            'c': Argument will be the `Rescue` object returned by `RescueBoard.find`.
+        params: String of parameters which will each be translated into an argument.
+            'c': Argument will be the `Rescue` object found on the local board.
             'C': Same as 'c', but creates the case if it doesn't exist.
-            'f': Same as 'c', but returning `(Rescue, bool)` as returned by `RescueBoard.find`.
-            'F': Same as 'C', but returning `(Rescue, bool)` as returned by `RescueBoard.find`.
-            'r': Argument will be the `Rat` object found.
+            'F': Same as 'C', but generating an additional boolean argument of whether or not
+                the case was created.
+            'r': Argument will be the `Rats` object found.
             'w': Argument will be a single word (separated by whitespace).
             't': Argument will be everything from here up to the end of the line.
 
-            '?': Marks the previous parameter as optional. If it isn't provided, don't complain. Optional parameters
-                may not precede mandatory ones. Argument will be None if not provided.
-        usage (str): String representing the correct usage of this command. Will be printed if it is used wrongly.
+            '?': Marks the previous parameter as optional. If it isn't provided, don't complain.
+                Optional parameters may not precede mandatory ones. Argument will be None if not
+                provided.
+        usage (str): String representing the correct usage of this command. Will be printed if
+            it is used wrongly.
 
     Example:
         ``
         @parametrize("cc?", "<first case> <optional second case>")
-        async def some_command(context, rescue1, rescue2_or_none_if_not_provided): pass
+        async def some_command(bot, trigger, rescue1, rescue2_or_none_if_not_provided): pass
         ``
     """
     params = _prettify_params(params)
