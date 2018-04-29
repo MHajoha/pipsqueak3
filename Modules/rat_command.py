@@ -220,10 +220,9 @@ def parametrize(params: str, usage: str):
             it is used wrongly.
 
     Example:
-        ``
-        @parametrize("cc?", "<first case> <optional second case>")
-        async def some_command(bot, trigger, rescue1, rescue2_or_none_if_not_provided): pass
-        ``
+        >>> @parametrize("cc?", "<first case> <optional second case>")
+        ... async def some_command(context, rescue1, rescue2_or_none_if_not_provided):
+        ...     pass
     """
     params = _prettify_params(params)
 
