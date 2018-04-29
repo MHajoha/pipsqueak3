@@ -26,13 +26,13 @@ class MockWebsocketConnection(object):
         self.sent_messages.append(data)
         if self.response:
             try:
-                data.setdefault("meta", {})["request_id"] = next(iter(
+                self.response.setdefault("meta", {})["request_id"] = next(iter(
                     self.handler._waiting_requests
                 ))
             except KeyError:
                 pass
             else:
-                self.incoming_messages.append(data)
+                self.incoming_messages.append(self.response)
                 self.response = None
 
     async def recv(self):
