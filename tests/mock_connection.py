@@ -49,6 +49,8 @@ class MockWebsocketConnection(object):
                 result[key] = str(value)
             elif isinstance(value, dict):
                 result[key] = self._make_serializable(value)
+            else:
+                result[key] = value
         return result
 
     async def close(self, reason):
