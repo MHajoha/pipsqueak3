@@ -1,5 +1,6 @@
 import asyncio
 import json
+from typing import Union
 
 from Modules.api import WebsocketAPIHandler20
 
@@ -17,7 +18,10 @@ class MockWebsocketConnection(object):
         self.host = "some_host"
         self.open = True
 
-    async def send(self, data: dict):
+    async def send(self, data: Union[str, dict]):
+        if isinstance(data, str):
+            data = json.loads(data)
+
         self.sent_messages.append(data)
         if self.response:
             try:
