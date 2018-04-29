@@ -1,6 +1,7 @@
 import asyncio
 import json
 from typing import Union
+from uuid import UUID
 
 from Modules.api import WebsocketAPIHandler20
 
@@ -38,7 +39,17 @@ class MockWebsocketConnection(object):
         while len(self.incoming_messages) == 0:
             await asyncio.sleep(0.1)
 
-        return json.dumps(self.incoming_messages.pop(0))
+        message = self._make_serializable(self.incoming_messages.pop(0))
+        return json.dumps(message)
+
+    def _make_serializable(self, what: dict) -> dict:
+        result = {}
+        for key, value in what.items():
+            if isinstance(value, UUID):
+                result[key] = str(value)
+            elif isinstance(value, dict):
+                result[key] = self._make_serializable(value)
+        return result
 
     async def close(self, reason):
         self.open = False
