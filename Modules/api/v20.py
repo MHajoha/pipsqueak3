@@ -9,7 +9,7 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md
 """
 from datetime import datetime
-from typing import Dict, Any, Union, Set
+from typing import Dict, Any, Union, Set, List
 
 from uuid import UUID
 
@@ -17,10 +17,17 @@ from Modules.api.converter import Converter, Field, Retention
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
-from ratlib.names import Status
+from ratlib.names import Status, Platforms
 from .api_handler import APIHandler
 from .websocket import WebsocketRequestHandler
 
+
+class RatsConverter(Converter, klass=Rats):
+    uuid = Field("id", to_obj=UUID, to_json=str)
+    name = Field("attributes.name")
+    platform = Field("attributes.platform",
+                     to_obj=lambda string: Platforms[string.upper()],
+                     to_json=lambda platform: platform.name.lower())
 
 class QuotationConverter(Converter, klass=Quotation):
     datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -35,6 +42,9 @@ class QuotationConverter(Converter, klass=Quotation):
 class RescueConverter(Converter, klass=Rescue):
     datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     str_to_datetime = lambda string: datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ")
+
+    async def rats_for_json(rats: List[dict]) -> List[Rats]:
+        return [await Rats.get_rat_by_uuid(UUID(rat["id"])) for rat in rats]
 
     case_id = Field("id", to_obj=UUID, to_json=str)
     client = Field("attributes.client")
@@ -62,7 +72,9 @@ class RescueConverter(Converter, klass=Rescue):
     board_index = Field("attributes.data.boardIndex", default=None, optional=True)
     mark_for_deletion = Field("attributes.data.markedForDeletion")
     lang_id = Field("attributes.data.langID")
-    rats = Field("relationships.rats.data")
+    rats = Field("relationships.rats.data",
+                 to_obj=rats_for_json,
+                 to_json=lambda rats: [{"id": rat.uuid, "type": "rats"} for rat in rats])
 
 
 class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
@@ -153,10 +165,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         if json["type"] != "rats":
             raise ValueError("JSON dict does not seem to represent a rat")
 
-        return Rats(
-            UUID(json["id"]),
-            json["attributes"]["name"]
-        )
+        return await RatsConverter.to_obj(json)
 
     @classmethod
     def _make_serializable(cls, data: dict) -> dict:
