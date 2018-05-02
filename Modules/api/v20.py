@@ -98,7 +98,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         else:
             return await self._request({"action": ("rescues", "update"),
                                         "id": rescue.case_id,
-                                        "data": rescue.json(full)})
+                                        "data": RescueConverter.to_json(rescue)})
 
     async def get_rescues(self, **criteria) -> Set[Rescue]:
         """Get all rescues from the API matching the criteria provided."""
@@ -109,7 +109,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
         results = set()
         for json_rescue in response["data"]:
-            results.add(await self.rescue_from_json(json_rescue))
+            results.add(await RescueConverter.to_obj(json_rescue))
 
         return results
 
@@ -126,7 +126,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
         results = set()
         for json_rat in response["data"]:
-            results.add(await self.rat_from_json(json_rat))
+            results.add(await RatsConverter.to_obj(json_rat))
 
         return results
 
@@ -138,34 +138,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         """Handle an update from the API."""
         if event == "rescueUpdated":
             for rescue_json in data["data"]:
-                self.board.from_api(await self.rescue_from_json(rescue_json))
-
-    @classmethod
-    async def quotation_from_json(cls, json: dict) -> Quotation:
-        """
-        Take the JSON dict representing a case json (from !inject) as returned by the API and
-        construct a :class:`Quotation` object from it.
-        """
-        return await QuotationConverter.to_obj(json)
-
-    @classmethod
-    async def rescue_from_json(cls, json: dict) -> Rescue:
-        """
-        Take the JSON dict representing a rescue as returned by the API and construct a
-        :class:`Rescue` object from it.
-        """
-
-        if json["type"] == "rescues":
-            return await RescueConverter.to_obj(json)
-        else:
-            raise ValueError("JSON dict does not seem to represent a rescue")
-
-    @classmethod
-    async def rat_from_json(cls, json: dict) -> Rats:
-        if json["type"] != "rats":
-            raise ValueError("JSON dict does not seem to represent a rat")
-
-        return await RatsConverter.to_obj(json)
+                self.board.from_api(await RescueConverter.to_obj(rescue_json))
 
     @classmethod
     def _make_serializable(cls, data: dict) -> dict:

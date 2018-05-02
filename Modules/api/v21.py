@@ -12,7 +12,7 @@ from typing import Set, Union
 
 from uuid import UUID
 
-from Modules.api.v20 import WebsocketAPIHandler20
+from Modules.api.v20 import WebsocketAPIHandler20, RescueConverter, RatsConverter
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
 
@@ -30,7 +30,7 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
 
         results = set()
         for json_rescue in response["data"]:
-            results.add(await self.rescue_from_json(json_rescue))
+            results.add(await RescueConverter.to_obj(json_rescue))
 
         return results
 
@@ -41,7 +41,7 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
             "id": str(id)
         })
 
-        return await self.rescue_from_json(response["data"][0])
+        return await RescueConverter.to_obj(response["data"][0])
 
     async def get_rats(self, **criteria) -> Set[Rats]:
         data = self._make_serializable(criteria)
@@ -51,7 +51,7 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
 
         results = set()
         for json_rescue in response["data"]:
-            results.add(await self.rescue_from_json(json_rescue))
+            results.add(await RatsConverter.to_obj(json_rescue))
 
         return results
 
@@ -61,4 +61,4 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
             "id": str(id)
         })
 
-        return await self.rat_from_json(response["data"][0])
+        return await RatsConverter.to_obj(response["data"][0])
