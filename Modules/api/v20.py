@@ -22,6 +22,16 @@ from .api_handler import APIHandler
 from .websocket import WebsocketRequestHandler
 
 
+async def rats_from_json(rats: List[dict]) -> List[Rats]:
+    return [await Rats.get_rat_by_uuid(UUID(rat["id"])) for rat in rats]
+
+async def quotes_from_json(quotes: List[dict]) -> List[Quotation]:
+    return [await QuotationConverter.to_obj(quote) for quote in quotes]
+
+async def quotes_to_json(quotes: List[Quotation]) -> List[dict]:
+    return [await QuotationConverter.to_json(quote) for quote in quotes]
+
+
 class RatsConverter(Converter, klass=Rats):
     uuid = Field("id", to_obj=UUID, to_json=str)
     name = Field("attributes.name")
@@ -43,9 +53,6 @@ class RescueConverter(Converter, klass=Rescue):
     datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     str_to_datetime = lambda string: datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ")
 
-    async def rats_for_json(rats: List[dict]) -> List[Rats]:
-        return [await Rats.get_rat_by_uuid(UUID(rat["id"])) for rat in rats]
-
     case_id = Field("id", to_obj=UUID, to_json=str)
     client = Field("attributes.client")
     system = Field("attributes.system")
@@ -58,8 +65,8 @@ class RescueConverter(Converter, klass=Rescue):
                        to_json=datetime_to_str)
     unidentified_rats = Field("attributes.unidentifiedRats")
     quotes = Field("attributes.quotes",
-                   to_obj=lambda quotes: list(map(QuotationConverter.to_obj, quotes)),
-                   to_json=lambda quotes: list(map(QuotationConverter.to_json, quotes)))
+                   to_obj=quotes_from_json,
+                   to_json=quotes_to_json)
     status = Field("attributes.status",
                    to_obj=lambda string: Status[string.upper()],
                    to_json=lambda status: status.name.lower())
@@ -73,7 +80,7 @@ class RescueConverter(Converter, klass=Rescue):
     mark_for_deletion = Field("attributes.data.markedForDeletion")
     lang_id = Field("attributes.data.langID")
     rats = Field("relationships.rats.data",
-                 to_obj=rats_for_json,
+                 to_obj=rats_from_json,
                  to_json=lambda rats: [{"id": rat.uuid, "type": "rats"} for rat in rats])
 
 
