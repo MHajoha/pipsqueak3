@@ -97,6 +97,7 @@ class WebsocketRequestHandler(ABC):
             log.warning("Did not receive version field from API")
 
         self._listener_task = self._loop.create_task(self._message_handler())
+        log.info(f"Connected to API at {uri}")
 
     async def disconnect(self):
         """
@@ -109,6 +110,7 @@ class WebsocketRequestHandler(ABC):
             raise NotConnectedError
 
         await self._connection.close()
+        log.info("Disconnected from API")
 
     async def modify(self, hostname: str=None, token: str=None, tls: bool=None):
         """
@@ -200,9 +202,13 @@ class WebsocketRequestHandler(ABC):
         else:
             data["meta"] = {"request_id": str(request_id)}
 
+        log.debug(f"Sending request to {self.hostname}: {data}")
         self._waiting_requests.add(request_id)
         await self._send_raw(data)
-        return await self._retrieve_response(request_id)
+        result = await self._retrieve_response(request_id)
+        if "count" in result.setdefault("meta", {}).keys():
+            log.debug(f"Received {result['meta']['count']} entries from the API")
+        return result
 
     async def _retrieve_response(self, request_id: UUID, max_wait: int=600) -> Dict[str, Any]:
         """
