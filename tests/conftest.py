@@ -452,8 +452,8 @@ def rescue_fx():
         client="Some Client",
         system="ALPHA CENTAURI",
         irc_nickname="Some_Client",
-        created_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123),
-        updated_at=datetime.datetime(2018, 1, 8, 10, 34, 40, 123),
+        created_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123000),
+        updated_at=datetime.datetime(2018, 1, 8, 10, 34, 40, 123000),
         unidentified_rats=["unable_to_use_nickserv[PC]"],
         quotes=[
             Quotation(
