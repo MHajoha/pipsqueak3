@@ -23,7 +23,7 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
 
     async def get_rescues(self, **criteria) -> Set[Rescue]:
         """Get all rescues from the API matching the criteria provided."""
-        data = self._make_serializable(criteria)
+        data = await RescueConverter.to_search_parameters(criteria)
         data["action"] = ("rescues", "search")
 
         response = await self._request(data)
@@ -44,7 +44,7 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
         return await RescueConverter.to_obj(response["data"][0])
 
     async def get_rats(self, **criteria) -> Set[Rats]:
-        data = self._make_serializable(criteria)
+        data = await RatsConverter.to_search_parameters(criteria)
         data["action"] = ("rats", "search")
 
         response = await self._request(data)

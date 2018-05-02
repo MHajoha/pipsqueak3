@@ -122,11 +122,11 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
     async def get_rescue_by_id(self, id: Union[str, UUID]) -> Rescue:
         """Get rescue with the provided ID."""
-        return (await self.get_rescues(id=id)).pop()
+        return (await self.get_rescues(case_id=id)).pop()
 
     async def get_rats(self, **criteria) -> Set[Rats]:
         """Get all rats from the API matching the criteria provided."""
-        data = self._make_serializable(criteria)
+        data = await RatsConverter.to_search_parameters(criteria)
         data["action"] = ("rats", "read")
 
         response = await self._request(data)
@@ -139,7 +139,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
     async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
         """Get rat with the provided ID."""
-        return (await self.get_rats(id=id)).pop()
+        return (await self.get_rats(case_id=id)).pop()
 
     async def _handle_update(self, data: dict, event: str):
         """Handle an update from the API."""
