@@ -416,7 +416,7 @@ def rescue_fx():
                     ],
                     "status": "open",
                     "system": "ALPHA CENTAURI",
-                    "title": None,
+                    "title": "Operation Go Away",
                     "outcome": "success",
                     "unidentifiedRats": ["unable_to_use_nickserv[PC]"],
                     "createdAt": "2018-01-07T22:48:38.123Z",
@@ -471,7 +471,7 @@ def rescue_fx():
                 last_author="Mecha"
             )
         ],
-        title=None,
+        title="Operation Go Away",
         first_limpet=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc"),
         board_index=9,
         mark_for_deletion=MarkForDeletion(False, None, None),
