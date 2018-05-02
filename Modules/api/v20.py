@@ -136,9 +136,23 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
     async def _handle_update(self, data: dict, event: str):
         """Handle an update from the API."""
-        if event == "rescueUpdated":
-            for rescue_json in data["data"]:
-                self.board.from_api(await RescueConverter.to_obj(rescue_json))
+        for rescue_json in data["data"]:
+            rescue = await RescueConverter.to_obj(rescue_json)
+            if event == "rescueUpdated":
+                if rescue.open:
+                    if rescue in self.board:
+                        self.board.modify(rescue)
+                    else:
+                        self.board.append(rescue)
+                else:
+                    if rescue in self.board:
+                        self.board.remove(rescue)
+            elif event == "rescueCreated":
+                if rescue.open and rescue not in self.board:
+                    self.board.append(rescue)
+            elif event == "rescueDeleted":
+                if rescue in self.board:
+                    self.board.remove(rescue)
 
     @classmethod
     def _make_serializable(cls, data: dict) -> dict:
