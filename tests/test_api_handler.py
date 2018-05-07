@@ -33,14 +33,13 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
                                 handler.get_rescues(client="Some Client",
                                 first_limpet=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc")))
 
-    if type(handler) is WebsocketAPIHandler20:
-        assert connection.was_sent({"action": ["rescues", "read"],
-                                    "client": "Some Client",
-                                    "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"})
-    elif type(handler) is WebsocketAPIHandler21:
-        assert connection.was_sent({"action": ["rescues", "search"],
-                                    "client": "Some Client",
-                                    "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"})
+    assert connection.was_sent(
+        {
+            "action": ["rescues", "read" if type(handler) is WebsocketAPIHandler20 else "search"],
+            "client": "Some Client",
+            "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"
+        }
+    )
 
     assert len(result) == 1
     assert result.pop() == rescue
@@ -56,14 +55,13 @@ async def test_get_rats(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketCo
     connection.response = json_rat
     result = await run_api_sync(handler, handler.get_rats(name="MrRatMan", platform=Platforms.PC))
 
-    if type(handler) is WebsocketAPIHandler20:
-        assert connection.was_sent(
-            {
-                "action": ["rats", "read" if type(handler) is WebsocketAPIHandler20 else "search"],
-                "name": "MrRatMan",
-                "platform": "pc"
-            }
-        )
+    assert connection.was_sent(
+        {
+            "action": ["rats", "read" if type(handler) is WebsocketAPIHandler20 else "search"],
+            "name": "MrRatMan",
+            "platform": "pc"
+        }
+    )
 
     assert len(result) == 1
     assert result.pop() == rat
