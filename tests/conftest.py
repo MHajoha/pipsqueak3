@@ -491,3 +491,33 @@ def rescue_fx():
     )
 
     return json_rescue, model_rescue
+
+
+@pytest.fixture
+def rats_fx():
+    json_rat = {
+        "meta": {
+            "count": 1,
+            "limit": 25,
+            "offset": 0,
+            "total": 1
+        },
+        "data": [
+            {
+                "id": "bede70e3-a695-448a-8376-ecbcf74385b6",
+                "type": "rats",
+                "attributes": {
+                    "name": "MrRatMan",
+                    "platform": "pc"
+                }
+            }
+        ]
+    }
+
+    model_rat = Rats(
+        uuid=UUID("bede70e3-a695-448a-8376-ecbcf74385b6"),
+        name="MrRatMan",
+        platform=Platforms.PC
+    )
+
+    return json_rat, model_rat

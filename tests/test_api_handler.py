@@ -6,6 +6,8 @@ import pytest
 
 from Modules.api import WebsocketAPIHandler20, WebsocketAPIHandler21
 from Modules.rat_rescue import Rescue
+from Modules.rats import Rats
+from ratlib.names import Platforms
 from tests.mock_connection import MockWebsocketConnection
 
 
@@ -42,3 +44,26 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
 
     assert len(result) == 1
     assert result.pop() == rescue
+
+
+@pytest.mark.asyncio
+async def test_get_rats(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
+                        rats_fx: Tuple[dict, Rats]):
+    handler, connection = handler_fx
+    json_rat, rat = rats_fx
+
+    await handler.connect()
+    connection.response = json_rat
+    result = await run_api_sync(handler, handler.get_rats(name="MrRatMan", platform=Platforms.PC))
+
+    if type(handler) is WebsocketAPIHandler20:
+        assert connection.was_sent(
+            {
+                "action": ["rats", "read" if type(handler) is WebsocketAPIHandler20 else "search"],
+                "name": "MrRatMan",
+                "platform": "pc"
+            }
+        )
+
+    assert len(result) == 1
+    assert result.pop() == rat
