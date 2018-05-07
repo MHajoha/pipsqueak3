@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Awaitable
 from uuid import UUID
 
 import asyncio
@@ -9,6 +9,16 @@ from Modules.rat_rescue import Rescue
 from tests.mock_connection import MockWebsocketConnection
 
 
+async def run_api_sync(handler: WebsocketAPIHandler20, coro: Awaitable):
+    return (await asyncio.wait(
+        {
+            coro,
+            handler._message_handler(),
+        },
+        return_when=asyncio.FIRST_COMPLETED
+    ))[0].pop().result()
+
+
 @pytest.mark.asyncio
 async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
                            rescue_fx: Tuple[dict, Rescue]):
@@ -17,14 +27,9 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
 
     await handler.connect()
     connection.response = json_rescue
-    result = (await asyncio.wait(
-        {
-            handler.get_rescues(client="Some Client",
-                                first_limpet=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc")),
-            handler._message_handler(),
-        },
-        return_when=asyncio.FIRST_COMPLETED
-    ))[0].pop().result()
+    result = await run_api_sync(handler,
+                                handler.get_rescues(client="Some Client",
+                                first_limpet=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc")))
 
     if type(handler) is WebsocketAPIHandler20:
         assert connection.was_sent({"action": ["rescues", "read"],
