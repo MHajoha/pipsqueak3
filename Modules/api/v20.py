@@ -40,8 +40,8 @@ class RatsConverter(Converter, klass=Rats):
                      to_json=lambda platform: platform.name.lower())
 
 class QuotationConverter(Converter, klass=Quotation):
-    datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    str_to_datetime = lambda string: datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ")
+    datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%f")
+    str_to_datetime = lambda string: datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%f")
 
     message = Field("message")
     author = Field("author")
