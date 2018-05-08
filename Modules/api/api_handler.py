@@ -59,7 +59,7 @@ class APIHandler(ABC):
 
     @abstractmethod
     async def update_rescue(self, rescue: Rescue, full: bool):
-        """Send a rescue's data to the API."""
+        """Update a rescue's data in the API."""
 
     @abstractmethod
     async def create_rescue(self, rescue: Rescue) -> UUID:
