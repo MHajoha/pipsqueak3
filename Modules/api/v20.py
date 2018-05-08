@@ -107,6 +107,41 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
                                         "id": rescue.case_id,
                                         "data": RescueConverter.to_json(rescue)})
 
+    async def create_rescue(self, rescue: Rescue) -> UUID:
+        """
+        Create a rescue within the API.
+
+        Raises:
+            ValueError: If the provided rescue already has its ID set.
+        """
+        if rescue.case_id is None:
+            response = await self._request({"action": ("rescues", "create"),
+                                            "data": RescueConverter.to_json(rescue)})
+            # rescue.case_id = UUID(response["data"][0]["id"])
+            return UUID(response["data"][0]["id"])
+        else:
+            raise ValueError("cannot send rescue which already has api id set")
+
+    async def delete_rescue(self, rescue: Union[Rescue, UUID]):
+        """
+        Delete a rescue in the API.
+
+        Arguments:
+            rescue (Rescue or UUID): Rescue to delete. Can be either a UUID or a Rescue object.
+                In the latter case, the rescue's ID must not be None.
+
+        Raises:
+            ValueError: If a Rescue object without its ID set was provided.
+        """
+        if isinstance(rescue, Rescue):
+            if rescue.case_id is None:
+                raise ValueError("cannot delete rescue without ID in the api")
+            else:
+                rescue = rescue.case_id
+
+        response = await self._request({"action": ("rescues", "delete"),
+                                        "id": str(rescue)})
+
     async def get_rescues(self, **criteria) -> Set[Rescue]:
         """Get all rescues from the API matching the criteria provided."""
         data = await RescueConverter.to_search_parameters(criteria)

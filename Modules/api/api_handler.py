@@ -58,8 +58,16 @@ class APIHandler(ABC):
         """Change hostname, token or tls properties."""
 
     @abstractmethod
-    async def update_rescue(self, rescue, full: bool):
+    async def update_rescue(self, rescue: Rescue, full: bool):
         """Send a rescue's data to the API."""
+
+    @abstractmethod
+    async def create_rescue(self, rescue: Rescue) -> UUID:
+        """Create a rescue within the API."""
+
+    @abstractmethod
+    async def delete_rescue(self, rescue: Union[Rescue, UUID]):
+        """Delete a rescue in the API."""
 
     @abstractmethod
     async def get_rescues(self, **criteria) -> Set[Rescue]:
