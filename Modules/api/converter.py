@@ -34,7 +34,7 @@ class _NotSet:
 
 class Field(object):
     def __init__(self, json_path: str, attribute_name: str=None, constructor_arg: str=None,
-                 to_obj: Callable=None, to_json: Callable=None, default=_NotSet, optional=False,
+                 to_obj: Callable=None, to_json: Callable=None, default=_NotSet,
                  retention: Retention=Retention.BOTH):
         self.json_path = json_path
         self.attr_name = attribute_name
@@ -42,7 +42,6 @@ class Field(object):
         self.to_obj = to_obj
         self.to_json = to_json
         self.default = default
-        self.optional = optional
         self.retention = retention
 
     def __set_name__(self, owner, name):
@@ -76,10 +75,7 @@ class Field(object):
             else:
                 return self.to_obj(getattr(obj, self.attr_name))
         except AttributeError as e:
-            if self.optional:
-                return None
-            else:
-                raise KeyError(f"provided object does not have attribute {self.attr_name}") from e
+            raise KeyError(f"provided object does not have attribute {self.attr_name}") from e
 
     async def from_search_criteria(self, value):
         if self.to_json is None:

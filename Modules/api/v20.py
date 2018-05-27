@@ -76,7 +76,7 @@ class RescueConverter(Converter, klass=Rescue):
     title = Field("attributes.title")
     code_red = Field("attributes.codeRed")
     first_limpet = Field("attributes.firstLimpetId", to_obj=UUID, to_json=str)
-    board_index = Field("attributes.data.boardIndex", default=None, optional=True)
+    board_index = Field("attributes.data.boardIndex", default=None)
     mark_for_deletion = Field("attributes.data.markedForDeletion")
     lang_id = Field("attributes.data.langID")
     rats = Field("relationships.rats.data",
