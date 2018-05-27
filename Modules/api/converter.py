@@ -34,7 +34,7 @@ class Retention(Enum):
 
 
 class _NotSet:
-    """To allow me to use None as an argument while still dynamically selecting a default value."""
+    """To allow me to use None as an argument while still dynamically selecting a _default value."""
     pass
 
 
@@ -58,72 +58,76 @@ class Field(object):
             to_obj: An optional sanitation function receiving the original value and returning a
                 new one, which will be used instead. If this returns None, then the constructor
                 argument will be omitted entirely. Can also be a coroutine.
-            to_json: Analogous to *to_obj*.
-            default: A default value or field for the json-to-model conversion to use if
+            to_json: Analogous to *_to_obj*.
+            default: A _default value or field for the json-to-model conversion to use if
                 *json_path* is not present in the json.
             retention: Where the field applies. See :class:`Retention`.
         """
-        self.json_path = json_path
-        self.attr_name = attribute_name
-        self.constructor_arg = constructor_arg
-        self.to_obj = to_obj
-        self.to_json = to_json
-        self.default = default
-        self.retention = retention
+        self._json_path = json_path
+        self._attr_name = attribute_name
+        self._constructor_arg = constructor_arg
+        self._to_obj = to_obj
+        self._to_json = to_json
+        self._default = default
+        self._retention = retention
+
+    json_path = property(lambda self: self._json_path)
+    constructor_arg = property(lambda self: self._constructor_arg)
+    retention = property(lambda self: self._retention)
 
     def __set_name__(self, owner, name):
         """
-        Facilitates `attr_name` and `constructor_arg` defaulting to the name of the field this
+        Facilitates `_attr_name` and `_constructor_arg` defaulting to the name of the field this
         instance is assigned to.
         """
-        if self.constructor_arg is None:
-            self.constructor_arg = name
-        if self.attr_name is None:
-            self.attr_name = name
+        if self._constructor_arg is None:
+            self._constructor_arg = name
+        if self._attr_name is None:
+            self._attr_name = name
 
     async def from_json(self, json: dict):
         """
         Retrieve this field's resulting value from a JSON dict.
         """
         try:
-            if self.to_obj is None:
-                return get_nested(json, self.json_path)
-            elif asyncio.iscoroutinefunction(self.to_obj):
-                return await self.to_obj(get_nested(json, self.json_path))
+            if self._to_obj is None:
+                return get_nested(json, self._json_path)
+            elif asyncio.iscoroutinefunction(self._to_obj):
+                return await self._to_obj(get_nested(json, self._json_path))
             else:
-                return self.to_obj(get_nested(json, self.json_path))
+                return self._to_obj(get_nested(json, self._json_path))
         except KeyError as e:
-            if isinstance(self.default, Field):
-                return await self.default.from_json(json)
-            elif self.default is not _NotSet:
-                return self.default
+            if isinstance(self._default, Field):
+                return await self._default.from_json(json)
+            elif self._default is not _NotSet:
+                return self._default
             else:
-                raise KeyError(f"{self.json_path} not found in provided json dict") from e
+                raise KeyError(f"{self._json_path} not found in provided json dict") from e
 
     async def from_model(self, obj):
         """
         Retrieve this field's resulting value from one of our objects.
         """
         try:
-            if self.to_json is None:
-                return getattr(obj, self.attr_name)
-            elif asyncio.iscoroutinefunction(self.to_json):
-                return await self.to_obj(getattr(obj, self.attr_name))
+            if self._to_json is None:
+                return getattr(obj, self._attr_name)
+            elif asyncio.iscoroutinefunction(self._to_json):
+                return await self._to_obj(getattr(obj, self._attr_name))
             else:
-                return self.to_obj(getattr(obj, self.attr_name))
+                return self._to_obj(getattr(obj, self._attr_name))
         except AttributeError as e:
-            raise KeyError(f"provided object does not have attribute {self.attr_name}") from e
+            raise KeyError(f"provided object does not have attribute {self._attr_name}") from e
 
     async def from_search_criteria(self, value):
         """
         Return *value* sanitized to be used as criteria in a request to the API.
         """
-        if self.to_json is None:
+        if self._to_json is None:
             return value
-        elif asyncio.iscoroutinefunction(self.to_json):
-            return await self.to_json(value)
+        elif asyncio.iscoroutinefunction(self._to_json):
+            return await self._to_json(value)
         else:
-            return self.to_json(value)
+            return self._to_json(value)
 
 
 class Converter(ABC):

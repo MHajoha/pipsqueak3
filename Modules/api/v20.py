@@ -22,13 +22,13 @@ from .api_handler import APIHandler
 from .websocket import WebsocketRequestHandler
 
 
-async def rats_from_json(rats: List[dict]) -> List[Rats]:
+async def _rats_from_json(rats: List[dict]) -> List[Rats]:
     return [await Rats.get_rat_by_uuid(UUID(rat["id"])) for rat in rats]
 
-async def quotes_from_json(quotes: List[dict]) -> List[Quotation]:
+async def _quotes_from_json(quotes: List[dict]) -> List[Quotation]:
     return [await QuotationConverter.to_obj(quote) for quote in quotes]
 
-async def quotes_to_json(quotes: List[Quotation]) -> List[dict]:
+async def _quotes_to_json(quotes: List[Quotation]) -> List[dict]:
     return [await QuotationConverter.to_json(quote) for quote in quotes]
 
 
@@ -65,8 +65,8 @@ class RescueConverter(Converter, klass=Rescue):
                        to_json=datetime_to_str)
     unidentified_rats = Field("attributes.unidentifiedRats")
     quotes = Field("attributes.quotes",
-                   to_obj=quotes_from_json,
-                   to_json=quotes_to_json)
+                   to_obj=_quotes_from_json,
+                   to_json=_quotes_to_json)
     status = Field("attributes.status",
                    to_obj=lambda string: Status[string.upper()],
                    to_json=lambda status: status.name.lower())
@@ -80,7 +80,7 @@ class RescueConverter(Converter, klass=Rescue):
     mark_for_deletion = Field("attributes.data.markedForDeletion")
     lang_id = Field("attributes.data.langID")
     rats = Field("relationships.rats.data",
-                 to_obj=rats_from_json,
+                 to_obj=_rats_from_json,
                  to_json=lambda rats: [{"id": rat.uuid, "type": "rats"} for rat in rats])
 
 
