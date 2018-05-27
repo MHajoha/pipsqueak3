@@ -195,16 +195,3 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             elif event == "rescueDeleted":
                 if rescue in self.board:
                     self.board.remove(rescue)
-
-    @classmethod
-    def _make_serializable(cls, data: dict) -> dict:
-        result = {}
-        for key, value in data.items():
-            if isinstance(value, UUID):
-                result[key] = str(value)
-            elif isinstance(value, datetime):
-                result[key] = value.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-            else:
-                result[key] = value
-
-        return result
