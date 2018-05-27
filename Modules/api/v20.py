@@ -174,7 +174,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
     async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
         """Get rat with the provided ID."""
-        return (await self.get_rats(case_id=id)).pop()
+        return (await self.get_rats(uuid=id)).pop()
 
     async def _handle_update(self, data: dict, event: str):
         """Handle an update from the API."""
