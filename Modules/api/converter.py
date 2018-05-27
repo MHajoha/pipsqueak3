@@ -205,7 +205,13 @@ class Converter(ABC):
         for key, value in criteria.items():
             field = cls._field_for_arg(key)
             if field.retention in (Retention.JSON_ONLY, Retention.BOTH):
-                set_nested(json, field.json_path.replace("attributes.", ""),
-                           await field.from_search_criteria(value))
+                if isinstance(value, list) or isinstance(value, tuple):
+                    result = [await field.from_search_criteria(item) for item in value]
+                elif isinstance(value, dict) and len(value) == 1 and "$not" in value.keys():
+                    result = {"$not": await field.from_search_criteria(value["$not"])}
+                else:
+                    result = await field.from_search_criteria(value)
+
+                set_nested(json, field.json_path.replace("attributes.", ""), result)
 
         return json
