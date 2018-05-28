@@ -2,12 +2,15 @@ from typing import Tuple, Awaitable
 from uuid import UUID
 
 import asyncio
+
+import datetime
 import pytest
 
 from Modules.api import WebsocketAPIHandler20, WebsocketAPIHandler21
+from Modules.api.converter import Not, AnyOf
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
-from ratlib.names import Platforms
+from ratlib.names import Platforms, Status
 from tests.mock_connection import MockWebsocketConnection
 
 
@@ -27,7 +30,13 @@ async def run_api_sync(handler: WebsocketAPIHandler20, coro: Awaitable):
 
 @pytest.mark.parametrize("criteria,expected_request", [
     ({"client": "Some Client", "first_limpet": UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc")},
-     {"client": "Some Client", "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"})
+     {"client": "Some Client", "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"}),
+    ({"updated_at": datetime.datetime(938, 3, 20, 4, 20, 0, 0)},
+     {"updatedAt": "938-03-20T04:20:00.000000Z"}),
+    ({"outcome": Not(None)},
+     {"outcome": {"$not": None}}),
+    ({"status": AnyOf(Status.OPEN, Status.CLOSED)},
+     {"status": ["open", "closed"]})
 ])
 @pytest.mark.asyncio
 async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
