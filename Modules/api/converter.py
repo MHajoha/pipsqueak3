@@ -110,9 +110,9 @@ class Field(object):
             if self._to_json is None:
                 return getattr(obj, self._attr_name)
             elif asyncio.iscoroutinefunction(self._to_json):
-                return await self._to_obj(getattr(obj, self._attr_name))
+                return await self._to_json(getattr(obj, self._attr_name))
             else:
-                return self._to_obj(getattr(obj, self._attr_name))
+                return self._to_json(getattr(obj, self._attr_name))
         except AttributeError as e:
             raise KeyError(f"provided object does not have attribute {self._attr_name}") from e
 
