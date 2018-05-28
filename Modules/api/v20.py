@@ -86,7 +86,7 @@ class RescueConverter(Converter, klass=Rescue):
     lang_id = Field("attributes.data.langID", criterion="lang_id")
     rats = Field("relationships.rats.data",
                  to_obj=_rats_from_json,
-                 to_json=lambda rats: [{"id": rat.uuid, "type": "rats"} for rat in rats])
+                 to_json=lambda rats: [{"id": str(rat.uuid), "type": "rats"} for rat in rats])
     outcome = Field("attributes.outcome",
                     retention=Retention.JSON_ONLY,
                     criterion="outcome")
@@ -112,8 +112,8 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             raise ValueError("Cannot send rescue without ID to the API")
         else:
             await self._request({"action": ("rescues", "update"),
-                                 "id": rescue.case_id,
-                                 "data": RescueConverter.to_json(rescue)})
+                                 "id": str(rescue.case_id),
+                                 "data": await RescueConverter.to_json(rescue)})
 
     async def create_rescue(self, rescue: Rescue) -> UUID:
         """
@@ -124,7 +124,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         """
         if rescue.case_id is None:
             response = await self._request({"action": ("rescues", "create"),
-                                            "data": RescueConverter.to_json(rescue)})
+                                            "data": await RescueConverter.to_json(rescue)})
             # rescue.case_id = UUID(response["data"][0]["id"])
             return UUID(response["data"][0]["id"])
         else:
