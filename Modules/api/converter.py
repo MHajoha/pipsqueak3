@@ -17,6 +17,21 @@ import asyncio
 from ratlib.nested import get_nested, set_nested
 
 
+class AnyOf(object):
+    """To mark in a search that a criterion can be one of several options."""
+    def __init__(self, *args):
+        self.options = args
+
+    def __iter__(self):
+        return iter(self.options)
+
+
+class Not(object):
+    """To mark in a search that a criterion can be anything but a certain value."""
+    def __init__(self, value):
+        self.value = value
+
+
 class Retention(Enum):
     """
     Enum to control where certain attributes are included.
@@ -199,10 +214,10 @@ class Converter(ABC):
         json = {}
         for key, value in criteria.items():
             field = cls._field_for_criterion(key)
-            if isinstance(value, list) or isinstance(value, tuple):
+            if isinstance(value, AnyOf):
                 result = [await field.from_obj_value(item) for item in value]
-            elif isinstance(value, dict) and len(value) == 1 and "$not" in value.keys():
-                result = {"$not": await field.from_obj_value(value["$not"])}
+            elif isinstance(value, Not):
+                result = {"$not": await field.from_obj_value(value.value)}
             else:
                 result = await field.from_obj_value(value)
 
