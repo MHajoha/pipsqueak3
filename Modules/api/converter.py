@@ -33,9 +33,7 @@ class Retention(Enum):
     NONE = auto()
 
 
-class _NotSet:
-    """To allow me to use None as an argument while still dynamically selecting a _default value."""
-    pass
+UNSET = object()
 
 
 class Field(object):
@@ -44,7 +42,7 @@ class Field(object):
     JSON form coming from the API and our things. Only valid in a Converter class.
     """
     def __init__(self, json_path: str, attribute_name: str=None, constructor_arg: str=None,
-                 to_obj: Callable=None, to_json: Callable=None, default=_NotSet,
+                 to_obj: Callable=None, to_json: Callable=None, default=UNSET,
                  retention: Retention=Retention.BOTH):
         """
         Create a new converter field.
@@ -56,9 +54,9 @@ class Field(object):
             constructor_arg: Name of the argument to the constructor of our object. Defaults as
                 *attribute_name* does.
             to_obj: An optional sanitation function receiving the original value and returning a
-                new one, which will be used instead. If this returns None, then the constructor
+                new one, which will be used instead. If this returns `UNSET`, then the constructor
                 argument will be omitted entirely. Can also be a coroutine.
-            to_json: Analogous to *_to_obj*.
+            to_json: Analogous to *_to_obj* for converting to the JSON representation.
             default: A _default value or field for the json-to-model conversion to use if
                 *json_path* is not present in the json.
             retention: Where the field applies. See :class:`Retention`.
@@ -99,7 +97,7 @@ class Field(object):
         except KeyError as e:
             if isinstance(self._default, Field):
                 return await self._default.from_json(json)
-            elif self._default is not _NotSet:
+            elif self._default is not UNSET:
                 return self._default
             else:
                 raise KeyError(f"{self._json_path} not found in provided json dict") from e
@@ -171,7 +169,7 @@ class Converter(ABC):
         for field in cls._fields():
             if field.retention in (Retention.MODEL_ONLY, Retention.BOTH):
                 result = await field.from_json(json)
-                if result is None:
+                if result is UNSET:
                     continue
                 else:
                     constructor_args[field.constructor_arg] = result
@@ -188,7 +186,7 @@ class Converter(ABC):
         for field in cls._fields():
             if field.retention in (Retention.JSON_ONLY, Retention.BOTH):
                 result = await field.from_model(obj)
-                if result is None:
+                if result is UNSET:
                     continue
                 else:
                     set_nested(json, field.json_path, result)
