@@ -25,47 +25,49 @@ async def run_api_sync(handler: WebsocketAPIHandler20, coro: Awaitable):
     ))[0].pop().result()
 
 
+@pytest.mark.parametrize("criteria,expected_request", [
+    ({"client": "Some Client", "first_limpet": UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc")},
+     {"client": "Some Client", "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"})
+])
 @pytest.mark.asyncio
 async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
-                           rescue_fx: Tuple[dict, Rescue]):
+                           rescue_fx: Tuple[dict, Rescue],
+                           criteria: dict, expected_request: dict):
     handler, connection = handler_fx
     json_rescue, rescue = rescue_fx
 
     await handler.connect()
     connection.response = json_rescue
-    result = await run_api_sync(handler,
-                                handler.get_rescues(client="Some Client",
-                                first_limpet=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc")))
+    result = await run_api_sync(handler, handler.get_rescues(**criteria))
 
-    assert connection.was_sent(
-        {
-            "action": ["rescues", "read" if type(handler) is WebsocketAPIHandler20 else "search"],
-            "client": "Some Client",
-            "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"
-        }
-    )
+    assert connection.was_sent({
+        "action": ["rescues", "read" if type(handler) is WebsocketAPIHandler20 else "search"],
+        **expected_request
+    })
 
     assert len(result) == 1
     assert result.pop() == rescue
 
 
+@pytest.mark.parametrize("criteria,expected_request", [
+    ({"name": "MrRatMan", "platform": Platforms.PC},
+     {"name": "MrRatMan", "platform": "pc"})
+])
 @pytest.mark.asyncio
 async def test_get_rats(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
-                        rats_fx: Tuple[dict, Rats]):
+                        rats_fx: Tuple[dict, Rats],
+                        criteria: dict, expected_request: dict):
     handler, connection = handler_fx
     json_rat, rat = rats_fx
 
     await handler.connect()
     connection.response = json_rat
-    result = await run_api_sync(handler, handler.get_rats(name="MrRatMan", platform=Platforms.PC))
+    result = await run_api_sync(handler, handler.get_rats(**criteria))
 
-    assert connection.was_sent(
-        {
-            "action": ["rats", "read" if type(handler) is WebsocketAPIHandler20 else "search"],
-            "name": "MrRatMan",
-            "platform": "pc"
-        }
-    )
+    assert connection.was_sent({
+        "action": ["rats", "read" if type(handler) is WebsocketAPIHandler20 else "search"],
+        **expected_request
+    })
 
     assert len(result) == 1
     assert result.pop() == rat
