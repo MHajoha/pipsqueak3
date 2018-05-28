@@ -58,7 +58,7 @@ class APIHandler(ABC):
         """Change hostname, token or tls properties."""
 
     @abstractmethod
-    async def update_rescue(self, rescue: Rescue, full: bool):
+    async def update_rescue(self, rescue: Rescue, full: bool=True):
         """Update a rescue's data in the API."""
 
     @abstractmethod
