@@ -33,11 +33,12 @@ async def _quotes_to_json(quotes: List[Quotation]) -> List[dict]:
 
 
 class RatsConverter(Converter, klass=Rats):
-    uuid = Field("id", to_obj=UUID, to_json=str)
-    name = Field("attributes.name")
+    uuid = Field("id", to_obj=UUID, to_json=str, criterion="id")
+    name = Field("attributes.name", criterion="name")
     platform = Field("attributes.platform",
                      to_obj=lambda string: Platforms[string.upper()],
-                     to_json=lambda platform: platform.name.lower())
+                     to_json=lambda platform: platform.name.lower(),
+                     criterion="platform")
 
 class QuotationConverter(Converter, klass=Quotation):
     datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -53,35 +54,42 @@ class RescueConverter(Converter, klass=Rescue):
     datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     str_to_datetime = lambda string: datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ")
 
-    case_id = Field("id", to_obj=UUID, to_json=str)
-    client = Field("attributes.client")
-    system = Field("attributes.system")
-    irc_nickname = Field("attributes.data.IRCNick", default=client)
+    case_id = Field("id", to_obj=UUID, to_json=str, criterion="id")
+    client = Field("attributes.client", criterion="client")
+    system = Field("attributes.system", criterion="system")
+    irc_nickname = Field("attributes.data.IRCNick", default=client, criterion="irc_nickname")
     created_at = Field("attributes.createdAt",
                        to_obj=str_to_datetime,
-                       to_json=datetime_to_str)
+                       to_json=datetime_to_str,
+                       criterion="created_at")
     updated_at = Field("attributes.updatedAt",
                        to_obj=str_to_datetime,
-                       to_json=datetime_to_str)
+                       to_json=datetime_to_str,
+                       criterion="updated_at")
     unidentified_rats = Field("attributes.unidentifiedRats")
     quotes = Field("attributes.quotes",
                    to_obj=_quotes_from_json,
                    to_json=_quotes_to_json)
     status = Field("attributes.status",
                    to_obj=lambda string: Status[string.upper()],
-                   to_json=lambda status: status.name.lower())
+                   to_json=lambda status: status.name.lower(),
+                   criterion="status")
     epic = Field("relationships.epics.data",
                  to_obj=lambda epics: len(epics) > 0,
                  retention=Retention.MODEL_ONLY)
-    title = Field("attributes.title")
-    code_red = Field("attributes.codeRed")
-    first_limpet = Field("attributes.firstLimpetId", to_obj=UUID, to_json=str)
-    board_index = Field("attributes.data.boardIndex", default=None)
+    title = Field("attributes.title", criterion="title")
+    code_red = Field("attributes.codeRed", criterion="code_red")
+    first_limpet = Field("attributes.firstLimpetId", to_obj=UUID, to_json=str,
+                         criterion="first_limpet")
+    board_index = Field("attributes.data.boardIndex", default=None, criterion="board_index")
     mark_for_deletion = Field("attributes.data.markedForDeletion")
-    lang_id = Field("attributes.data.langID")
+    lang_id = Field("attributes.data.langID", criterion="lang_id")
     rats = Field("relationships.rats.data",
                  to_obj=_rats_from_json,
                  to_json=lambda rats: [{"id": rat.uuid, "type": "rats"} for rat in rats])
+    outcome = Field("attributes.outcome",
+                    retention=Retention.JSON_ONLY,
+                    criterion="outcome")
 
 
 class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
@@ -157,7 +165,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
     async def get_rescue_by_id(self, id: Union[str, UUID]) -> Rescue:
         """Get rescue with the provided ID."""
-        return (await self.get_rescues(case_id=id)).pop()
+        return (await self.get_rescues(id=id)).pop()
 
     async def get_rats(self, **criteria) -> Set[Rats]:
         """Get all rats from the API matching the criteria provided."""
@@ -174,7 +182,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
     async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
         """Get rat with the provided ID."""
-        return (await self.get_rats(uuid=id)).pop()
+        return (await self.get_rats(id=id)).pop()
 
     async def _handle_update(self, data: dict, event: str):
         """Handle an update from the API."""

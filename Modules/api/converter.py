@@ -43,7 +43,7 @@ class Field(object):
     """
     def __init__(self, json_path: str, attribute_name: str=None, constructor_arg: str=None,
                  to_obj: Callable=None, to_json: Callable=None, default=UNSET,
-                 retention: Retention=Retention.BOTH):
+                 retention: Retention=Retention.BOTH, criterion: str=None):
         """
         Create a new converter field.
 
@@ -68,10 +68,13 @@ class Field(object):
         self._to_json = to_json
         self._default = default
         self._retention = retention
+        self._criterion = criterion
 
     json_path = property(lambda self: self._json_path)
+    attr_name = property(lambda self: self._attr_name)
     constructor_arg = property(lambda self: self._constructor_arg)
     retention = property(lambda self: self._retention)
+    criterion = property(lambda self: self._criterion)
 
     def __set_name__(self, owner, name):
         """
@@ -107,18 +110,13 @@ class Field(object):
         Retrieve this field's resulting value from one of our objects.
         """
         try:
-            if self._to_json is None:
-                return getattr(obj, self._attr_name)
-            elif asyncio.iscoroutinefunction(self._to_json):
-                return await self._to_json(getattr(obj, self._attr_name))
-            else:
-                return self._to_json(getattr(obj, self._attr_name))
+            return await self.from_obj_value(getattr(obj, self._attr_name))
         except AttributeError as e:
             raise KeyError(f"provided object does not have attribute {self._attr_name}") from e
 
-    async def from_search_criteria(self, value):
+    async def from_obj_value(self, value):
         """
-        Return *value* sanitized to be used as criteria in a request to the API.
+        Return *value* sanitized to be used in the JSON representation.
         """
         if self._to_json is None:
             return value
@@ -150,17 +148,17 @@ class Converter(ABC):
         return filter(lambda attr: isinstance(attr, Field), cls.__dict__.values())
 
     @classmethod
-    def _field_for_arg(cls, arg: str) -> Field:
+    def _field_for_criterion(cls, criterion: str) -> Field:
         """
-        The field on this converter with the specified constructor argument.
+        Find the field on this converter for the given criterion.
 
         Raises:
-            ValueError: If this converter has no such field.
+            KeyError: If this converter has no fitting field.
         """
         try:
-            return next(filter(lambda field: field.constructor_arg == arg, cls._fields()))
+            return next(filter(lambda field: field.criterion == criterion, cls._fields()))
         except StopIteration as e:
-            raise ValueError(arg) from e
+            raise KeyError(criterion) from e
 
     @classmethod
     async def to_obj(cls, json: dict):
@@ -196,20 +194,18 @@ class Converter(ABC):
     @classmethod
     async def to_search_parameters(cls, criteria: dict) -> dict:
         """
-        Sanitize the provided dict of criteria, treating them as arguments to our object's
-        constructor.
+        Sanitize the provided dict of criterion with the appropriate field of this converter.
         """
         json = {}
         for key, value in criteria.items():
-            field = cls._field_for_arg(key)
-            if field.retention in (Retention.JSON_ONLY, Retention.BOTH):
-                if isinstance(value, list) or isinstance(value, tuple):
-                    result = [await field.from_search_criteria(item) for item in value]
-                elif isinstance(value, dict) and len(value) == 1 and "$not" in value.keys():
-                    result = {"$not": await field.from_search_criteria(value["$not"])}
-                else:
-                    result = await field.from_search_criteria(value)
+            field = cls._field_for_criterion(key)
+            if isinstance(value, list) or isinstance(value, tuple):
+                result = [await field.from_obj_value(item) for item in value]
+            elif isinstance(value, dict) and len(value) == 1 and "$not" in value.keys():
+                result = {"$not": await field.from_obj_value(value["$not"])}
+            else:
+                result = await field.from_obj_value(value)
 
-                set_nested(json, field.json_path.replace("attributes.", ""), result)
+            set_nested(json, field.json_path.replace("attributes.", ""), result)
 
         return json
