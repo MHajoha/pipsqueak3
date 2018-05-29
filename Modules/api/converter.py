@@ -187,7 +187,7 @@ class Converter(ABC):
                 else:
                     constructor_args[field.constructor_arg] = result
 
-        return cls._klass(**constructor_args)
+        return await cls.final_to_obj(cls._klass(**constructor_args))
 
     @classmethod
     async def to_json(cls, obj) -> dict:
@@ -204,7 +204,7 @@ class Converter(ABC):
                 else:
                     set_nested(json, field.json_path, result)
 
-        return json
+        return await cls.final_to_json(json)
 
     @classmethod
     async def to_search_parameters(cls, criteria: dict) -> dict:
@@ -223,4 +223,20 @@ class Converter(ABC):
 
             set_nested(json, field.json_path.replace("attributes.", ""), result)
 
+        return json
+
+    @classmethod
+    async def final_to_obj(cls, obj: _klass) -> _klass:
+        """
+        A function to optionally be overridden by converters to do a last bit of sanitation when the
+        object itself has been constructed.
+        """
+        return obj
+
+    @classmethod
+    async def final_to_json(cls, json: dict) -> dict:
+        """
+        A function to optionally be overridden by converters to do a last bit of sanitation when the
+        JSON dict has been constructed.
+        """
         return json
