@@ -28,6 +28,20 @@ async def run_api_sync(handler: WebsocketAPIHandler20, coro: Awaitable):
     ))[0].pop().result()
 
 
+def add_meta(data: dict) -> dict:
+    return {
+        "meta": {
+            "count": 1,
+            "limit": 25,
+            "offset": 0,
+            "total": 1
+        },
+        "data": [
+            data
+        ]
+    }
+
+
 @pytest.mark.parametrize("criteria,expected_request", [
     ({"client": "Some Client", "first_limpet": UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc")},
      {"client": "Some Client", "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"}),
@@ -46,7 +60,7 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
     json_rescue, rescue = rescue_fx
 
     await handler.connect()
-    connection.response = json_rescue
+    connection.response = add_meta(json_rescue)
     result = await run_api_sync(handler, handler.get_rescues(**criteria))
 
     assert connection.was_sent({
@@ -70,7 +84,7 @@ async def test_get_rats(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketCo
     json_rat, rat = rats_fx
 
     await handler.connect()
-    connection.response = json_rat
+    connection.response = add_meta(json_rat)
     result = await run_api_sync(handler, handler.get_rats(**criteria))
 
     assert connection.was_sent({
@@ -89,7 +103,7 @@ async def test_get_rescue_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWeb
     json_rescue, rescue = rescue_fx
 
     await handler.connect()
-    connection.response = json_rescue
+    connection.response = add_meta(json_rescue)
     result = await run_api_sync(handler, handler.get_rescue_by_id(
         UUID("bede70e3-a695-448a-8376-ecbcf74385b6")))
 
@@ -108,7 +122,7 @@ async def test_get_rat_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
     json_rat, rat = rats_fx
 
     await handler.connect()
-    connection.response = json_rat
+    connection.response = add_meta(json_rat)
     result = await run_api_sync(handler, handler.get_rat_by_id(
         UUID("bede70e3-a695-448a-8376-ecbcf74385b6")))
 

@@ -372,79 +372,69 @@ def rescue_fx():
     Rescue object.
     """
     json_rescue = {
-        "meta": {
-            "count": 1,
-            "limit": 25,
-            "offset": 0,
-            "total": 1
-        },
-        "data": [
-            {
-                "id": "bede70e3-a695-448a-8376-ecbcf74385b6",
-                "type": "rescues",
-                "attributes": {
-                    "client": "Some Client",
-                    "codeRed": False,
-                    "data": {
-                        "langID": "en",
-                        "status": {},
-                        "IRCNick": "Some_Client",
-                        "boardIndex": 9,
-                        "markedForDeletion": {
-                            "marked": False,
-                            "reason": "None.",
-                            "reporter": "Noone."
-                        }
-                    },
-                    "notes": "Friendly client had run out of fuel in his Farragut Battle Cruiser. DB appreciated.",
-                    "platform": "pc",
-                    "quotes": [
-                        {
-                            "author": "Mecha",
-                            "message": "RATSIGNAL - CMDR Some Client - System: Alpha Centauri - Platform: PC - O2: OK - Language: English (en-GB) - IRC Nickname: Some_Client",
-                            "createdAt": "2018-01-07T22:48:38.123456",
-                            "updatedAt": "2018-01-07T22:48:38.123456",
-                            "lastAuthor": "Mecha"
-                        },
-                        {
-                            "author": "Mecha",
-                            "message": "[Autodetected system: Alpha Centauri]",
-                            "createdAt": "2018-01-07T22:48:38.123458",
-                            "updatedAt": "2018-01-07T22:48:38.123458",
-                            "lastAuthor": "Mecha"
-                        }
-                    ],
-                    "status": "open",
-                    "system": "ALPHA CENTAURI",
-                    "title": "Operation Go Away",
-                    "outcome": "success",
-                    "unidentifiedRats": ["unable_to_use_nickserv[PC]"],
-                    "createdAt": "2018-01-07T22:48:38.123Z",
-                    "updatedAt": "2018-01-08T10:34:40.123Z",
-                    "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"
-                },
-                "relationships": {
-                    "rats": {
-                        "data": [
-                            {"id": "dc9c91fb-9ead-47e9-8771-81da2c1971bc", "type": "rats"},
-                            {"id": "aa42e51c-5e55-4261-9958-6f1743957d70", "type": "rats"}
-                        ]
-                    },
-                    "firstLimpet": {
-                        "data": {
-                            "id": "dc9c91fb-9ead-47e9-8771-81da2c1971bc",
-                            "type": "rats"
-                        }
-                    },
-                    "epics": {
-                        "data": []
-                    }
-                },
-                "links": {
-                    "self": "/rescues/bede70e3-a695-448a-8376-ecbcf74385b6"
+        "id": "bede70e3-a695-448a-8376-ecbcf74385b6",
+        "type": "rescues",
+        "attributes": {
+            "client": "Some Client",
+            "codeRed": False,
+            "data": {
+                "langID": "en",
+                "status": {},
+                "IRCNick": "Some_Client",
+                "boardIndex": 9,
+                "markedForDeletion": {
+                    "marked": False,
+                    "reason": "None.",
+                    "reporter": "Noone."
                 }
+            },
+            "notes": "Friendly client had run out of fuel in his Farragut Battle Cruiser. DB appreciated.",
+            "platform": "pc",
+            "quotes": [
+                {
+                    "author": "Mecha",
+                    "message": "RATSIGNAL - CMDR Some Client - System: Alpha Centauri - Platform: PC - O2: OK - Language: English (en-GB) - IRC Nickname: Some_Client",
+                    "createdAt": "2018-01-07T22:48:38.123456",
+                    "updatedAt": "2018-01-07T22:48:38.123456",
+                    "lastAuthor": "Mecha"
+                },
+                {
+                    "author": "Mecha",
+                    "message": "[Autodetected system: Alpha Centauri]",
+                    "createdAt": "2018-01-07T22:48:38.123458",
+                    "updatedAt": "2018-01-07T22:48:38.123458",
+                    "lastAuthor": "Mecha"
+                }
+            ],
+            "status": "open",
+            "system": "ALPHA CENTAURI",
+            "title": "Operation Go Away",
+            "outcome": "success",
+            "unidentifiedRats": ["unable_to_use_nickserv[PC]"],
+            "createdAt": "2018-01-07T22:48:38.123Z",
+            "updatedAt": "2018-01-08T10:34:40.123Z",
+            "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"
+        },
+        "relationships": {
+            "rats": {
+                "data": [
+                    {"id": "dc9c91fb-9ead-47e9-8771-81da2c1971bc", "type": "rats"},
+                    {"id": "aa42e51c-5e55-4261-9958-6f1743957d70", "type": "rats"}
+                ]
+            },
+            "firstLimpet": {
+                "data": {
+                    "id": "dc9c91fb-9ead-47e9-8771-81da2c1971bc",
+                    "type": "rats"
+                }
+            },
+            "epics": {
+                "data": []
             }
-        ]
+        },
+        "links": {
+            "self": "/rescues/bede70e3-a695-448a-8376-ecbcf74385b6"
+        }
     }
 
     model_rescue = Rescue(
@@ -496,22 +486,12 @@ def rescue_fx():
 @pytest.fixture
 def rats_fx():
     json_rat = {
-        "meta": {
-            "count": 1,
-            "limit": 25,
-            "offset": 0,
-            "total": 1
-        },
-        "data": [
-            {
-                "id": "bede70e3-a695-448a-8376-ecbcf74385b6",
-                "type": "rats",
-                "attributes": {
-                    "name": "MrRatMan",
-                    "platform": "pc"
-                }
-            }
-        ]
+        "id": "bede70e3-a695-448a-8376-ecbcf74385b6",
+        "type": "rats",
+        "attributes": {
+            "name": "MrRatMan",
+            "platform": "pc"
+        }
     }
 
     model_rat = Rats(
