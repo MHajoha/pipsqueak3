@@ -132,3 +132,19 @@ async def test_get_rat_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
     })
 
     assert result == rat
+
+@pytest.mark.asyncio
+async def test_update_rescue(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
+                             rescue_fx: Tuple[dict, Rescue]):
+    handler, connection = handler_fx
+    json_rescue, rescue = rescue_fx
+
+    await handler.connect()
+    connection.response = {"the api handler": "is going to ignore this"}
+    await run_api_sync(handler, handler.update_rescue(rescue))
+
+    assert connection.was_sent({
+        "action": ["rescues", "update"],
+        "id": rescue.case_id,
+        "data": json_rescue
+    })
