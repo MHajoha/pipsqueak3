@@ -57,6 +57,6 @@ def set_nested(dest: dict, key: str, value):
     split_keys = key.split(".")
     current = dest
     for subkey in split_keys[:-1]:
-        current = dest.setdefault(subkey, {})
+        current = current.setdefault(subkey, {})
 
     current[split_keys[-1]] = value
