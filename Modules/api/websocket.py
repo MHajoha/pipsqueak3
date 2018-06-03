@@ -17,11 +17,11 @@ from uuid import UUID, uuid4
 
 import websockets
 
-import config
+from config import config
 from .exceptions import NotConnectedError, MismatchedVersionError, APIError, UnauthorizedError, \
     ForbiddenError, InternalAPIError
 
-log = logging.getLogger(f"{config.Logging.base_logger}.{__name__}")
+log = logging.getLogger(f"{config['logging']['base_logger']}.{__name__}")
 
 
 class WebsocketRequestHandler(ABC):
