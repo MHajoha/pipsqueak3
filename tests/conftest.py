@@ -431,9 +431,6 @@ def rescue_fx():
             "epics": {
                 "data": []
             }
-        },
-        "links": {
-            "self": "/rescues/bede70e3-a695-448a-8376-ecbcf74385b6"
         }
     }
 
