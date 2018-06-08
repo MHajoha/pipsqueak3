@@ -9,7 +9,7 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md
 """
 from datetime import datetime
-from typing import Dict, Any, Union, Set, List
+from typing import Union, List
 
 from uuid import UUID
 
@@ -160,39 +160,39 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         response = await self._request({"action": ("rescues", "delete"),
                                         "id": str(rescue)})
 
-    async def get_rescues(self, **criteria) -> Set[Rescue]:
+    async def get_rescues(self, **criteria) -> List[Rescue]:
         """Get all rescues from the API matching the criteria provided."""
         data = await RescueConverter.to_search_parameters(criteria)
         data["action"] = ("rescues", "read")
 
         response = await self._request(data)
 
-        results = set()
+        results = []
         for json_rescue in response["data"]:
-            results.add(await RescueConverter.to_obj(json_rescue))
+            results.append(await RescueConverter.to_obj(json_rescue))
 
         return results
 
     async def get_rescue_by_id(self, id: Union[str, UUID]) -> Rescue:
         """Get rescue with the provided ID."""
-        return (await self.get_rescues(id=id)).pop()
+        return (await self.get_rescues(id=id))[0]
 
-    async def get_rats(self, **criteria) -> Set[Rats]:
+    async def get_rats(self, **criteria) -> List[Rats]:
         """Get all rats from the API matching the criteria provided."""
         data = await RatsConverter.to_search_parameters(criteria)
         data["action"] = ("rats", "read")
 
         response = await self._request(data)
 
-        results = set()
+        results = []
         for json_rat in response["data"]:
-            results.add(await RatsConverter.to_obj(json_rat))
+            results.append(await RatsConverter.to_obj(json_rat))
 
         return results
 
     async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
         """Get rat with the provided ID."""
-        return (await self.get_rats(id=id)).pop()
+        return (await self.get_rats(id=id))[0]
 
     async def _handle_update(self, data: dict, event: str):
         """Handle an update from the API."""

@@ -8,7 +8,7 @@ Licensed under the BSD 3-Clause License.
 
 See LICENSE.md
 """
-from typing import Set, Union
+from typing import Union, List
 
 from uuid import UUID
 
@@ -21,16 +21,16 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
     """Handler for API version 2.1."""
     api_version = "v2.1"
 
-    async def get_rescues(self, **criteria) -> Set[Rescue]:
+    async def get_rescues(self, **criteria) -> List[Rescue]:
         """Get all rescues from the API matching the criteria provided."""
         data = await RescueConverter.to_search_parameters(criteria)
         data["action"] = ("rescues", "search")
 
         response = await self._request(data)
 
-        results = set()
+        results = []
         for json_rescue in response["data"]:
-            results.add(await RescueConverter.to_obj(json_rescue))
+            results.append(await RescueConverter.to_obj(json_rescue))
 
         return results
 
@@ -43,15 +43,15 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
 
         return await RescueConverter.to_obj(response["data"][0])
 
-    async def get_rats(self, **criteria) -> Set[Rats]:
+    async def get_rats(self, **criteria) -> List[Rats]:
         data = await RatsConverter.to_search_parameters(criteria)
         data["action"] = ("rats", "search")
 
         response = await self._request(data)
 
-        results = set()
+        results = []
         for json_rescue in response["data"]:
-            results.add(await RatsConverter.to_obj(json_rescue))
+            results.append(await RatsConverter.to_obj(json_rescue))
 
         return results
 
