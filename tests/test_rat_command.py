@@ -146,18 +146,16 @@ class TestRatCommand(object):
         await Commands.trigger(ctx)
 
     async def test_successful_parametrize(self, async_callable_fx: AsyncCallableMock, bot_fx):
-        """Verify that the parametrize decorator does what it should."""
-        fun = mock.MagicMock()
-        decorated = Commands.parametrize("wt", "some_usage")(asyncio.coroutine(fun))
+        """Verify that the parametrize decorator passes in the correct arguments."""
+        decorated = Commands.parametrize("wt", "some_usage")(async_callable_fx)
         decorated = Commands.command("wibbly")(decorated)
 
-        await Commands.trigger("!wibbly wobbly timey wimey", "unit_test", "#channel")
+        context = await Context.from_message(bot_fx, "#channel", "unit_test",
+                                             "!wibbly wobbly timey wimey")
+        await Commands.trigger(context)
 
-        fun.assert_called_once()
-        assert fun.call_args[0][0] is Commands.bot
-        assert isinstance(fun.call_args[0][1], Trigger)
-        assert fun.call_args[0][2] == "wobbly"
-        assert fun.call_args[0][3] == "timey wimey"
+        assert async_callable_fx.was_called_once
+        assert async_callable_fx.was_called_with(bot_fx, context, "wobbly", "timey wimey")
 
     async def test_too_few_args(self, async_callable_fx: AsyncCallableMock, bot_fx):
         """
