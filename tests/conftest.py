@@ -325,7 +325,7 @@ def test_fact_fx() -> Fact:
 
 
 @pytest.fixture(params=[WebsocketAPIHandler20, WebsocketAPIHandler21], ids=["v2.0", "v2.1"])
-def handler_fx(request):
+async def handler_fx(request):
     """
     Fixture for API handler tests.
     Replaces :fun:`websockets.connect` with a lambda returning the fake object.
@@ -343,8 +343,6 @@ def handler_fx(request):
         >>> async def my_test(handler_fx):
         ...     handler, was_sent, queue_response = handler_fx
         ...     await handler.connect()
-
-    Read below for more information.
     """
     instance = request.param("some_hostname", "some_token", "tls_or_not")
     connection = MockWebsocketConnection(instance)
@@ -359,6 +357,8 @@ def handler_fx(request):
 
     original_connect = websockets.connect
     websockets.connect = fake_connect
+
+    await instance.connect()
 
     yield instance, connection
 

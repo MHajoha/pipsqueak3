@@ -1,7 +1,5 @@
-from typing import Tuple, Awaitable
+from typing import Tuple
 from uuid import UUID
-
-import asyncio
 
 import datetime
 import pytest
@@ -12,20 +10,6 @@ from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
 from ratlib.names import Platforms, Status
 from tests.mock_connection import MockWebsocketConnection
-
-
-async def run_api_sync(handler: WebsocketAPIHandler20, coro: Awaitable):
-    """
-    This abomination is necessary because pytest (and probably unittest as well) won't run the
-    listener task scheduled by the API handler.
-    """
-    return (await asyncio.wait(
-        {
-            coro,
-            handler._message_handler(),
-        },
-        return_when=asyncio.FIRST_COMPLETED
-    ))[0].pop().result()
 
 
 def add_meta(data: dict) -> dict:
@@ -59,9 +43,8 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
     handler, connection = handler_fx
     json_rescue, rescue = rescue_fx
 
-    await handler.connect()
     connection.response = add_meta(json_rescue)
-    result = await run_api_sync(handler, handler.get_rescues(**criteria))
+    result = await handler.get_rescues(**criteria)
 
     assert connection.was_sent({
         "action": ["rescues", "read" if type(handler) is WebsocketAPIHandler20 else "search"],
@@ -83,9 +66,8 @@ async def test_get_rats(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketCo
     handler, connection = handler_fx
     json_rat, rat = rats_fx
 
-    await handler.connect()
     connection.response = add_meta(json_rat)
-    result = await run_api_sync(handler, handler.get_rats(**criteria))
+    result = await handler.get_rats(**criteria)
 
     assert connection.was_sent({
         "action": ["rats", "read" if type(handler) is WebsocketAPIHandler20 else "search"],
@@ -102,10 +84,9 @@ async def test_get_rescue_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWeb
     handler, connection = handler_fx
     json_rescue, rescue = rescue_fx
 
-    await handler.connect()
     connection.response = add_meta(json_rescue)
-    result = await run_api_sync(handler, handler.get_rescue_by_id(
-        UUID("bede70e3-a695-448a-8376-ecbcf74385b6")))
+    result = await handler.get_rescue_by_id(
+        UUID("bede70e3-a695-448a-8376-ecbcf74385b6"))
 
     assert connection.was_sent({
         "action": ["rescues", "read"],
@@ -121,10 +102,9 @@ async def test_get_rat_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
     handler, connection = handler_fx
     json_rat, rat = rats_fx
 
-    await handler.connect()
     connection.response = add_meta(json_rat)
-    result = await run_api_sync(handler, handler.get_rat_by_id(
-        UUID("bede70e3-a695-448a-8376-ecbcf74385b6")))
+    result = await handler.get_rat_by_id(
+        UUID("bede70e3-a695-448a-8376-ecbcf74385b6"))
 
     assert connection.was_sent({
         "action": ["rats", "read"],
@@ -139,9 +119,8 @@ async def test_update_rescue(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
     handler, connection = handler_fx
     json_rescue, rescue = rescue_fx
 
-    await handler.connect()
     connection.response = {"the api handler": "is going to ignore this"}
-    await run_api_sync(handler, handler.update_rescue(rescue))
+    await handler.update_rescue(rescue)
 
     assert connection.was_sent({
         "action": ["rescues", "update"],
