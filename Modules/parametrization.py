@@ -1,137 +1,175 @@
+from asyncio import iscoroutinefunction
 from functools import wraps
 from itertools import zip_longest
-from typing import List
+from typing import Iterable, Callable
 
+from Modules.rat import Rat
+from Modules.rat_rescue import Rescue
 from config import config
 from Modules.context import Context
 from Modules.rat_command import log
 
 
-def parametrize(params: str, usage: str):
+class _BaseParam(object):
+    """Base class for parameters. Do not use directly."""
+    _usage_name = None
+
+    def __init__(self, optional: bool=False):
+        """
+        Initializes a new parameter.
+
+        Args:
+            optional:
+                Indicates that this argument may be omitted. Mandatory parameters may not follow
+                optional ones.
+        """
+        self.optional = optional
+
+    def __str__(self):
+        """Create a user-friendly representation of the parameter for use in usage strings."""
+        return f"[{self._usage_name}]" if self.optional else f"<{self._usage_name}>"
+
+
+class RescueParam(_BaseParam):
+    """
+    Supplies the command function with an instance of :class:`Rescue`.
+
+    The raw argument can be either the client name, their IRC nickname, the rescue's board index or
+    '@' followed by the rescue's UUID.
+
+    This type of parameter has extra options, see :meth:`__init__`.
+    """
+    _usage_name = "case"
+
+    def __init__(self, *, create: bool=False, include_creation: bool=False, closed: bool=False,
+                 optional: bool=False):
+        """
+        Initializes a new rescue parameter.
+
+        Args:
+            create:
+                If this is True, a case will be created if none could be found. The raw argument
+                will then be interpreted as the client's name. Doesn't work when the raw
+                argument is a number or begins with '@'.
+            include_creation:
+                If this is True, a boolean of whether or not the case was created
+                (see *create*) will be added as well.
+            closed:
+                If this is True, closed cases will be considered as well. Requires an API
+                connection.
+            optional:
+                If this is True, the argument may be omitted. Mandatory parameters may not
+                follow optional ones.
+        """
+        super().__init__(optional)
+        self.create = create
+        self.include_creation = include_creation
+
+
+class RatParam(_BaseParam):
+    """
+    Supplies the command function with an instance of :class:`Rats` found in the rat cache.
+
+    The raw argument can be the rat name, any of their nicknames or '@' followed by the rat's UUID.
+    """
+    _usage_name = "rat"
+
+
+class WordParam(_BaseParam):
+    """
+    Simply forwards the raw argument to the underlying command function.
+    """
+    _usage_name = "word"
+
+
+class TextParam(_BaseParam):
+    """
+    Supplies the command function with the raw argument in question and also everything up to the
+    end of the line in a single string argument.
+    """
+    _usage_name = "text"
+
+
+def parametrize(*params: _BaseParam, usage: str=None):
     """
     Provides underlying command coroutine with predictable and easy-to-use arguments.
 
     Arguments:
-        params: String of parameters which will each be translated into an argument.
+        *params (_BaseParam):
+            Parameters, each of which will be translated into one or more arguments. Available are
+            :class:`RescueParam`, :class:`RatParam`, :class:`WordParam` and :class:`TextParam`.
+            Check their respective documentation for more info.
 
-            * 'c': Argument will be the `Rescue` object found on the local board.
-            * 'C': Same as 'c', but creates the case if it doesn't exist.
-            * 'F': Same as 'C', but generating an additional boolean argument of whether or not
-              the case was created.
-            * 'r': Argument will be the `Rats` object found.
-            * 'w': Argument will be a single word (separated by whitespace).
-            * 't': Argument will be everything from here up to the end of the line.
-
-            * '?': Marks the previous parameter as optional. If it isn't provided, don't complain.
-              Optional parameters may not precede mandatory ones. Argument will be None if not provided.
-        usage (str): String representing the correct usage of this command. Will be printed if
-            it is used wrongly.
+            The classes :class:`Rescue` and :class:`Rats` can be used as a shorthand for the default
+            configurations of :class:`RescueParam` and :class:`RatParam`.
+        usage (str):
+            String representing the correct usage of this command. Will be printed if it is used
+            incorrectly. If this is omitted, a string will be generated from the parameters.
 
     Example:
-        >>> @parametrize("cc?", "<first case> <optional second case>")
+        >>> @parametrize(WordParam(), WordParam(optional=True))
         ... async def some_command(context, rescue1, rescue2_or_none_if_not_provided):
         ...     pass
     """
-    params = _prettify_params(params)
+    def decorator(fun: Callable):
+        @wraps(fun)
+        async def wrapper(context: Context, *args):
+            args: list = [context, *args]
 
-    def decorator(coro):
-        @wraps(coro)
-        async def new_coro(context: Context):
-            args = [context]
+            if len(params) > 0:
+                for param, arg, arg_eol in zip_longest(params, context.words[1:],
+                                                       context.words_eol[1:]):
+                    if param is Rescue or param is RescueParam:
+                        param = RescueParam()
+                    elif param is Rat or param is RatParam:
+                        param = RatParam()
+                    elif param is None:
+                        if isinstance(params[-1], TextParam):
+                            log.debug("Disregarding extra arguments as last parameter was text.")
+                            continue
+                        else:
+                            log.debug(f"Command {context.words[0]} called with too many arguments.")
+                            await _reply_usage(context, usage)
+                            return
 
-            for param, arg, arg_eol in zip_longest(params, context.words[1:],
-                                                   context.words_eol[1:]):
-                if param is None:
-                    if params[-1] == "t":
-                        log.debug("Disregarding extra arguments as last parameter was text.")
+                    if arg is None:
+                        # no more arguments provided
+                        if param.optional:
+                            args.append(None)
+                        else:
+                            log.debug(f"Mandatory parameter {param} was omitted in "
+                                      f"{context.words[0]}.")
+                            await _reply_usage(context, usage)
+                            return
+
+                    if isinstance(param, RescueParam):
+                        # waiting on the rescue board for this
+                        raise NotImplementedError("Rescue parameters are not implemented yet")
+                    elif isinstance(param, RatParam):
+                        raise NotImplementedError("Rat parameters are not implemented yet")
+                    elif isinstance(param, WordParam):
+                        args.append(arg)
+                    elif isinstance(param, TextParam):
+                        args.append(arg_eol)
                     else:
-                        log.debug(f"Command {context.words[0]} called with too many arguments.")
-                        return await context.reply(f"usage: {config['commands']['prefix']}"
-                                                   f"{context.words[0]} {usage}")
-                elif arg is None:
-                    # no more arguments provided
-                    if param.optional:
-                        args.append(None)
-                    else:
-                        log.debug(f"Mandatory parameter {param} was omitted in "
-                                  f"{context.words[0]}.")
-                        return await context.reply(f"usage: {config['commands']['prefix']}"
-                                                   f"{context.words[0]} {usage}")
+                        raise ValueError(f"unrecognized command parameter '{param}'")
 
-                elif param.matches("cf"):
-                    # waiting on the rescue board for this
-                    raise NotImplementedError("Rescue parameters are not implemented yet")
-                elif param == "r":
-                    raise NotImplementedError("Rat parameters are not implemented yet")
-                elif param == "w":
-                    args.append(arg)
-                elif param == "t":
-                    args.append(arg_eol)
-                else:
-                    raise ValueError(f"unrecognized command parameter '{param}'")
-
-            return await coro(*args)
-        return new_coro
+            if iscoroutinefunction(fun):
+                return await fun(*args)
+            else:
+                return fun(*args)
+        return wrapper
     return decorator
 
 
-class _Param(object):
-    """Helper object used by `Commands.parametrize`"""
-    def __init__(self, param_char: str, optional: bool=False, create: bool=False):
-        self.char = param_char
-        self.optional = optional
-        self.create = create
-
-    def __eq__(self, other):
-        if self is other:
-            return True
-        elif isinstance(other, _Param):
-            return self.char.lower() == other.char.lower() and \
-                   self.optional == other.optional and \
-                   self.create == other.create
-        elif isinstance(other, str):
-            return self.char.lower() == other.lower()
-        else:
-            return False
-
-    def __str__(self):
-        return "{}{}".format(
-            self.char.upper() if self.create else self.char.lower(),
-            '?' if self.optional else ""
-        )
-
-    def matches(self, params: str):
-        """
-        Example:
-            >>> _Param("b").matches("abc")
-            True
-            >>> _Param("c").matches("ab")
-            False
-        """
-        return self.char.lower() in params.lower()
-
-
-def _prettify_params(params: str) -> List[_Param]:
-    """
-    Helper method for `parametrize`.
-
-    Arguments:
-        params (str): Raw parameter string as passed to the decorator.
-
-    Returns:
-        [_Param]: Representation of parameters as a list of easy-to-use `_Param` objects.
-    """
-    pretty_params = []
+def _generate_usage(params: Iterable[_BaseParam]) -> str:
+    result = ""
     for param in params:
-        if param == "?":
-            if len(pretty_params) >= 1:
-                pretty_params[-1].optional = True
-            else:
-                raise ValueError(f"got '?' modifier before parameter in {params}")
-        else:
-            pretty_params.append(_Param(param))
+        result += param
+        result += " "
 
-        if param.isupper():
-            pretty_params[-1].create = True
+    return result
 
-    return pretty_params
+
+def _reply_usage(context: Context, usage: str):
+    return context.reply(f"usage: {config['commands']['prefix']}{context.words[0]} {usage}")
