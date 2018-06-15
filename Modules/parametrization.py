@@ -136,6 +136,7 @@ def parametrize(*params: _BaseParam, usage: str=None):
                         # no more arguments provided
                         if param.optional:
                             args.append(None)
+                            continue
                         else:
                             log.debug(f"Mandatory parameter {param} was omitted in "
                                       f"{context.words[0]}.")
