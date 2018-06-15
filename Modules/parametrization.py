@@ -29,6 +29,10 @@ class _BaseParam(object):
         """Create a user-friendly representation of the parameter for use in usage strings."""
         return f"[{self._usage_name}]" if self.optional else f"<{self._usage_name}>"
 
+    def __repr__(self):
+        """Create a developer-friendly representation of the parameter."""
+        return type(self).__name__ + ("(optional)" if self.optional else "()")
+
 
 class RescueParam(_BaseParam):
     """
@@ -64,6 +68,16 @@ class RescueParam(_BaseParam):
         super().__init__(optional)
         self.create = create
         self.include_creation = include_creation
+        self.closed = closed
+
+    def __repr__(self):
+        result = type(self).__name__ + "("
+        for flag, name in ((self.create, "create"), (self.include_creation, "include_creation"),
+                           (self.closed, "closed"), (self.optional, "optional")):
+            if flag:
+                result += name + ", "
+
+        return result
 
 
 class RatParam(_BaseParam):
@@ -138,7 +152,7 @@ def parametrize(*params: _BaseParam, usage: str=None):
                             args.append(None)
                             continue
                         else:
-                            log.debug(f"Mandatory parameter {param} was omitted in "
+                            log.debug(f"Mandatory parameter {repr(param)} was omitted in "
                                       f"{context.words[0]}.")
                             await _reply_usage(context, usage)
                             return
@@ -153,7 +167,7 @@ def parametrize(*params: _BaseParam, usage: str=None):
                     elif isinstance(param, TextParam):
                         args.append(arg_eol)
                     else:
-                        raise ValueError(f"unrecognized command parameter '{param}'")
+                        raise ValueError(f"unrecognized command parameter '{repr(param)}'")
 
             if iscoroutinefunction(fun):
                 return await fun(*args)
