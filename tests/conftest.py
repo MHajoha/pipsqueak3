@@ -328,21 +328,16 @@ def test_fact_fx() -> Fact:
 async def handler_fx(request):
     """
     Fixture for API handler tests.
-    Replaces :fun:`websockets.connect` with a lambda returning the fake object.
+    Replaces :fun:`websockets.connect` with a lambda returning a fake connection object.
 
     Returns:
-        (APIHandler, function, function): A 3-tuple with the following content:
-            [0]: A handler instance. Not yet connected.
-            [1]: was_sent: A convenience function to test whether or not the aforementioned handler
-                sent a given json dict.
-            [2]: queue_response: A convenience function to fake a response from the server in the
-                mock websocket connection. The provided response will be used when `send` is next
-                called.
+        (APIHandler, MockWebsocketConnection): A 2-tuple with the following content:
+            [0]: A handler instance. Connected.
+            [1]: The :class:`MockWebsocketConnection` instance used by the returned api handler.
 
     Example:
         >>> async def my_test(handler_fx):
-        ...     handler, was_sent, queue_response = handler_fx
-        ...     await handler.connect()
+        ...     handler, connection = handler_fx
     """
     instance = request.param("some_hostname", "some_token", "tls_or_not")
     connection = MockWebsocketConnection(instance)
