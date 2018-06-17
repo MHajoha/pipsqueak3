@@ -17,7 +17,7 @@ from Modules.api.converter import Converter, Field, Retention
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
-from ratlib.names import Status, Platforms
+from utils.ratlib import Status, Platforms
 from .api_handler import APIHandler
 from .websocket import WebsocketRequestHandler
 

@@ -8,7 +8,7 @@ from Modules.api import WebsocketAPIHandler20, WebsocketAPIHandler21
 from Modules.api.converter import Not, AnyOf
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
-from ratlib.names import Platforms, Status
+from utils.ratlib import Platforms, Status
 from tests.mock_connection import MockWebsocketConnection
 
 
