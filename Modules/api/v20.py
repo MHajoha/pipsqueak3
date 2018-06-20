@@ -73,11 +73,11 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         Raises:
             ValueError: If *rescue* doesn't have its case ID set.
         """
-        if rescue.case_id is None:
+        if rescue.uuid is None:
             raise ValueError("Cannot send rescue without ID to the API")
         else:
             await self._request({"action": ("rescues", "update"),
-                                 "id": str(rescue.case_id),
+                                 "id": str(rescue.uuid),
                                  "data": self._rescue_to_json(rescue)})
 
     async def create_rescue(self, rescue: Rescue) -> UUID:
@@ -87,7 +87,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         Raises:
             ValueError: If the provided rescue already has its ID set.
         """
-        if rescue.case_id is None:
+        if rescue.uuid is None:
             response = await self._request({"action": ("rescues", "create"),
                                             "data": self._rescue_to_json(rescue)})
             # rescue.case_id = UUID(response["data"][0]["id"])
@@ -107,10 +107,10 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             ValueError: If a Rescue object without its ID set was provided.
         """
         if isinstance(rescue, Rescue):
-            if rescue.case_id is None:
+            if rescue.uuid is None:
                 raise ValueError("cannot delete rescue without ID in the api")
             else:
-                rescue = rescue.case_id
+                rescue = rescue.uuid
 
         await self._request({"action": ("rescues", "delete"),
                              "id": str(rescue)})
@@ -218,7 +218,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
     @classmethod
     async def _rescue_from_json(cls, json: dict) -> Rescue:
         result = Rescue(
-            case_id=UUID(json["id"], version=4),
+            uuid=UUID(json["id"], version=4),
             client=json["attributes"]["client"],
             system=json["attributes"]["system"],
             irc_nickname=json["attributes"]["data"]
