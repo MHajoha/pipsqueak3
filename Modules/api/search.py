@@ -10,7 +10,7 @@ See LICENSE.md
 """
 from typing import Callable, Dict, Tuple, Any, Union, Sequence
 
-from ratlib.nested import set_nested
+from utils.nested import set_nested
 from utils.typechecking import check_type
 
 
