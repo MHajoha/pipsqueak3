@@ -232,9 +232,10 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             status=Status[json["attributes"]["status"].upper()],
             code_red=json["attributes"]["codeRed"],
             first_limpet=UUID(json["attributes"]["firstLimpetId"], version=4),
-            board_index=json["attributes"]["data"].get("boardIndex", None),
-            mark_for_deletion=cls._mfd_from_json(json["attributes"]["data"]["markedForDeletion"]),
-            lang_id=json["attributes"]["data"].get("langID", "en"),
+            board_index=json["attributes"].get("data", {}).get("boardIndex", None),
+            mark_for_deletion=cls._mfd_from_json(json["attributes"].get("data", {})
+                                                 .get("markedForDeletion", {})),
+            lang_id=json["attributes"].get("data", {}).get("langID", "en"),
             rats=[await Rats.get_rat_by_uuid(UUID(rat["id"], version=4))
                   for rat in json["relationships"]["rats"]["data"]]
         )
