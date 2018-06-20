@@ -117,7 +117,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
     async def get_rescues(self, **criteria) -> List[Rescue]:
         """Get all rescues from the API matching the criteria provided."""
-        data = self._rat_search.generate(criteria)
+        data = self._rescue_search.generate(criteria)
         data["action"] = ("rescues", "read")
 
         response = await self._request(data)
