@@ -221,7 +221,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             client=json["attributes"]["client"],
             system=json["attributes"]["system"],
             irc_nickname=json["attributes"]["data"]
-                .get("IRCNick", default=json["attributes"]["client"]),
+                .get("IRCNick", json["attributes"]["client"]),
             created_at=datetime.strptime(json["attributes"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ"),
             updated_at=datetime.strptime(json["attributes"]["updatedAt"], "%Y-%m-%dT%H:%M:%S.%fZ"),
             unidentified_rats=json["attributes"]["unidentifiedRats"],
@@ -231,9 +231,9 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             status=Status[json["attributes"]["status"].upper()],
             code_red=json["attributes"]["codeRed"],
             first_limpet=UUID(json["firstLimpetId"], version=4),
-            board_index=json["attributes"]["data"].get("boardIndex", default=None),
+            board_index=json["attributes"]["data"].get("boardIndex", None),
             mark_for_deletion=cls._mfd_from_json(json["attributes"]["markedForDeletion"]),
-            lang_id=json["attributes"]["data"].get("langID", default="en"),
+            lang_id=json["attributes"]["data"].get("langID", "en"),
             rats=[await Rats.get_rat_by_uuid(UUID(rat["id"], version=4))
                   for rat in json["relationships"]["rats"]["data"]]
         )
