@@ -1,5 +1,5 @@
 """
-exceptions.py - Handler(s) for API v2.1
+v21.py - Handler(s) for API v2.1
 
 Copyright (c) 2018 The Fuel Rats Mischief,
 All rights reserved.
@@ -12,7 +12,7 @@ from typing import Union, List
 
 from uuid import UUID
 
-from Modules.api.v20 import WebsocketAPIHandler20, RescueConverter, RatsConverter
+from Modules.api.v20 import WebsocketAPIHandler20
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
 
@@ -23,14 +23,14 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
 
     async def get_rescues(self, **criteria) -> List[Rescue]:
         """Get all rescues from the API matching the criteria provided."""
-        data = await RescueConverter.to_search_parameters(criteria)
+        data = self._rescue_search(criteria)
         data["action"] = ("rescues", "search")
 
         response = await self._request(data)
 
         results = []
         for json_rescue in response["data"]:
-            results.append(await RescueConverter.to_obj(json_rescue))
+            results.append(await self._rescue_from_json(json_rescue))
 
         return results
 
@@ -41,17 +41,17 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
             "id": str(id)
         })
 
-        return await RescueConverter.to_obj(response["data"][0])
+        return await self._rescue_from_json(response["data"])
 
     async def get_rats(self, **criteria) -> List[Rats]:
-        data = await RatsConverter.to_search_parameters(criteria)
+        data = self._rat_search.generate(criteria)
         data["action"] = ("rats", "search")
 
         response = await self._request(data)
 
         results = []
         for json_rescue in response["data"]:
-            results.append(await RatsConverter.to_obj(json_rescue))
+            results.append(self._rat_from_json(json_rescue))
 
         return results
 
@@ -61,4 +61,4 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
             "id": str(id)
         })
 
-        return await RatsConverter.to_obj(response["data"][0])
+        return self._rat_from_json(response["data"])

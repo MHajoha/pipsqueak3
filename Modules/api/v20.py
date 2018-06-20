@@ -1,5 +1,5 @@
 """
-exceptions.py - Handler(s) for API v2.0
+v20.py - Handler(s) for API v2.0
 
 Copyright (c) 2018 The Fuel Rats Mischief,
 All rights reserved.
@@ -10,10 +10,13 @@ See LICENSE.md
 """
 from datetime import datetime
 from typing import Union, List
+from functools import partial
 
 from uuid import UUID
 
-from Modules.api.converter import Converter, Field, Retention
+from Modules.api.search import Search
+from Modules.epic import Epic
+from Modules.mark_for_deletion import MarkForDeletion
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
@@ -22,89 +25,41 @@ from .api_handler import APIHandler
 from .websocket import WebsocketRequestHandler
 
 
-async def _rats_from_json(rats: List[dict]) -> List[Rats]:
-    return [await Rats.get_rat_by_uuid(UUID(rat["id"])) for rat in rats]
-
-async def _quotes_from_json(quotes: List[dict]) -> List[Quotation]:
-    return [await QuotationConverter.to_obj(quote) for quote in quotes]
-
-async def _quotes_to_json(quotes: List[Quotation]) -> List[dict]:
-    return [await QuotationConverter.to_json(quote) for quote in quotes]
-
-
-class RatsConverter(Converter, klass=Rats):
-    uuid = Field("id", to_obj=UUID, to_json=str, criterion="id")
-    name = Field("attributes.name", criterion="name")
-    platform = Field("attributes.platform",
-                     to_obj=lambda string: Platforms[string.upper()],
-                     to_json=lambda platform: platform.name.lower(),
-                     criterion="platform")
-
-    @classmethod
-    async def final_to_json(cls, json: dict):
-        json["type"] = "rats"
-        return json
-
-class QuotationConverter(Converter, klass=Quotation):
-    datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%f")
-    str_to_datetime = lambda string: datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%f")
-
-    message = Field("message")
-    author = Field("author")
-    created_at = Field("createdAt", to_obj=str_to_datetime, to_json=datetime_to_str),
-    updated_at = Field("updatedAt", to_obj=str_to_datetime, to_json=datetime_to_str),
-    last_author = Field("lastAuthor")
-
-class RescueConverter(Converter, klass=Rescue):
-    datetime_to_str = lambda dt: dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    str_to_datetime = lambda string: datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ")
-
-    case_id = Field("id", to_obj=UUID, to_json=str, criterion="id")
-    client = Field("attributes.client", criterion="client")
-    system = Field("attributes.system", criterion="system")
-    irc_nickname = Field("attributes.data.IRCNick", default=client, criterion="irc_nickname")
-    created_at = Field("attributes.createdAt",
-                       to_obj=str_to_datetime,
-                       to_json=datetime_to_str,
-                       criterion="created_at")
-    updated_at = Field("attributes.updatedAt",
-                       to_obj=str_to_datetime,
-                       to_json=datetime_to_str,
-                       criterion="updated_at")
-    unidentified_rats = Field("attributes.unidentifiedRats")
-    quotes = Field("attributes.quotes",
-                   to_obj=_quotes_from_json,
-                   to_json=_quotes_to_json)
-    status = Field("attributes.status",
-                   to_obj=lambda string: Status[string.upper()],
-                   to_json=lambda status: status.name.lower(),
-                   criterion="status")
-    epic = Field("relationships.epics.data",
-                 to_obj=lambda epics: len(epics) > 0,
-                 retention=Retention.MODEL_ONLY)
-    title = Field("attributes.title", criterion="title")
-    code_red = Field("attributes.codeRed", criterion="code_red")
-    first_limpet = Field("attributes.firstLimpetId", to_obj=UUID, to_json=str,
-                         criterion="first_limpet")
-    board_index = Field("attributes.data.boardIndex", default=None, criterion="board_index")
-    mark_for_deletion = Field("attributes.data.markedForDeletion")
-    lang_id = Field("attributes.data.langID", criterion="lang_id")
-    rats = Field("relationships.rats.data",
-                 to_obj=_rats_from_json,
-                 to_json=lambda rats: [{"id": str(rat.uuid), "type": "rats"} for rat in rats])
-    outcome = Field("attributes.outcome",
-                    retention=Retention.JSON_ONLY,
-                    criterion="outcome")
-
-    @classmethod
-    async def final_to_json(cls, json: dict):
-        json["type"] = "rescues"
-        return json
-
-
 class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
     """Handler for API version 2.0."""
     api_version = "v2.0"
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self._rescue_search = Search()
+        self._rescue_search.add("id", "id", types=UUID, sanitize=str)
+        self._rescue_search.add("client", "client", types=str),
+        self._rescue_search.add("system", "system", types=str, sanitize=str.upper)
+        self._rescue_search.add("status", "status", types=Status,
+                                sanitize=lambda status: status.name.lower())
+        self._rescue_search.add("unidentified_rats", "unidentifiedRats", types=list)
+        self._rescue_search.add("created_at", "createdAt", types=datetime,
+                                sanitize=partial(datetime.strftime, format="%Y-%m-%dT%H:%M:%S.%fZ"))
+        self._rescue_search.add("updated_at", "updatedAt", types=datetime,
+                                sanitize=partial(datetime.strftime, format="%Y-%m-%dT%H:%M:%S.%fZ"))
+        self._rescue_search.add("quotes", "quotes", types=(list, Quotation),
+                                sanitize=lambda quotes: [self._rescue_to_json(quote)
+                                                         for quote in list(quotes)])
+        self._rescue_search.add("title", "title", types=str, nullable=True)
+        self._rescue_search.add("code_red", "codeRed", bool)
+        self._rescue_search.add("first_limpet", "firstLimpetId", types=(Rats, UUID), nullable=True,
+                                sanitize=lambda fl: str(fl if isinstance(fl, UUID) else fl.uuid))
+        self._rescue_search.add("marked_for_deletion", "data.markedForDeletion.marked", types=bool)
+        self._rescue_search.add("irc_nickname", "IRCNick", types=str)
+        self._rescue_search.add("lang_id", "data.langID", types=str)
+
+        self._rat_search = Search()
+        self._rat_search.add("id", "id", types=UUID, sanitize=str)
+        self._rat_search.add("name", "name", types=str)
+        self._rat_search.add("platform", "platform", types=Platforms,
+                             sanitize=lambda platform: None if platform is Platforms.DEFAULT
+                                                       else platform.name.lower())
 
     async def update_rescue(self, rescue, full: bool=True):
         """
@@ -123,7 +78,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         else:
             await self._request({"action": ("rescues", "update"),
                                  "id": str(rescue.case_id),
-                                 "data": await RescueConverter.to_json(rescue)})
+                                 "data": self._rescue_to_json(rescue)})
 
     async def create_rescue(self, rescue: Rescue) -> UUID:
         """
@@ -134,7 +89,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         """
         if rescue.case_id is None:
             response = await self._request({"action": ("rescues", "create"),
-                                            "data": await RescueConverter.to_json(rescue)})
+                                            "data": self._rescue_to_json(rescue)})
             # rescue.case_id = UUID(response["data"][0]["id"])
             return UUID(response["data"][0]["id"])
         else:
@@ -157,19 +112,19 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             else:
                 rescue = rescue.case_id
 
-        response = await self._request({"action": ("rescues", "delete"),
-                                        "id": str(rescue)})
+        await self._request({"action": ("rescues", "delete"),
+                             "id": str(rescue)})
 
     async def get_rescues(self, **criteria) -> List[Rescue]:
         """Get all rescues from the API matching the criteria provided."""
-        data = await RescueConverter.to_search_parameters(criteria)
+        data = self._rat_search.generate(criteria)
         data["action"] = ("rescues", "read")
 
         response = await self._request(data)
 
         results = []
         for json_rescue in response["data"]:
-            results.append(await RescueConverter.to_obj(json_rescue))
+            results.append(await self._rescue_from_json(json_rescue))
 
         return results
 
@@ -179,14 +134,14 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
     async def get_rats(self, **criteria) -> List[Rats]:
         """Get all rats from the API matching the criteria provided."""
-        data = await RatsConverter.to_search_parameters(criteria)
+        data = self._rat_search.generate(criteria)
         data["action"] = ("rats", "read")
 
         response = await self._request(data)
 
         results = []
         for json_rat in response["data"]:
-            results.append(await RatsConverter.to_obj(json_rat))
+            results.append(self._rat_from_json(json_rat))
 
         return results
 
@@ -197,7 +152,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
     async def _handle_update(self, data: dict, event: str):
         """Handle an update from the API."""
         for rescue_json in data["data"]:
-            rescue = await RescueConverter.to_obj(rescue_json)
+            rescue = await self._rescue_from_json(rescue_json)
             if event == "rescueUpdated":
                 if rescue.open:
                     if rescue in self.board:
@@ -213,3 +168,111 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             elif event == "rescueDeleted":
                 if rescue in self.board:
                     self.board.remove(rescue)
+
+    @classmethod
+    def _quotation_from_json(cls, json: dict) -> Quotation:
+        return Quotation(
+            message=json["messsage"],
+            created_at=datetime.strptime(json["createdAt"], "%Y-%m-%dT%H:%M:%S.%f"),
+            updated_at=datetime.strptime(json["updatedAt"], "%Y-%m-%dT%H:%M:%S.%f"),
+            author=json["author"],
+            last_author=json["lastAuthor"]
+        )
+
+    @classmethod
+    def _quotation_to_json(cls, quote: Quotation) -> dict:
+        return {
+            "message": quote.message,
+            "createdAt": quote.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+            "updatedAt": quote.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+            "author": quote.author,
+            "lastAuthor": quote.last_author
+        }
+
+    @classmethod
+    def _mfd_from_json(cls, json: dict) -> MarkForDeletion:
+        return MarkForDeletion(
+            marked=json["marked"],
+            reporter=None if json["reporter"] == "Noone." else json["reporter"],
+            reason=None if json["reason"] == "None." else json["reason"]
+        )
+
+    @classmethod
+    def _mfd_to_json(cls, mfd: MarkForDeletion) -> dict:
+        return {
+            "marked": mfd.marked,
+            "reporter": mfd.reporter,
+            "reason": mfd.reason
+        }
+
+    @classmethod
+    def _epic_from_json(cls, json: dict) -> Epic:
+        return Epic(
+            uuid=json["id"],
+            notes=json["attributes"]["notes"],
+            rescue=cls.board.find_by_uuid(UUID(json["attributes"]["rescueId"], 4)),
+            rat=cls.board.find_by_uuid(UUID(json["attributes"]["ratId"], 4))
+        )
+
+    @classmethod
+    async def _rescue_from_json(cls, json: dict) -> Rescue:
+        result = Rescue(
+            case_id=UUID(json["id"], version=4),
+            client=json["attributes"]["client"],
+            system=json["attributes"]["system"],
+            irc_nickname=json["attributes"]["data"]
+                .get("IRCNick", default=json["attributes"]["client"]),
+            created_at=datetime.strptime(json["attributes"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%f"),
+            updated_at=datetime.strptime(json["attributes"]["updatedAt"], "%Y-%m-%dT%H:%M:%S.%f"),
+            unidentified_rats=json["attributes"]["unidentifiedRats"],
+            quotes=list(map(cls._quotation_from_json, json["attributes"]["quotes"])),
+            # epic=list(map(cls.)), TODO: Add getting epics
+            title=json["attributes"]["title"],
+            status=Status[json["attributes"]["status"].upper()],
+            code_red=json["attributes"]["codeRed"],
+            first_limpet=UUID(json["firstLimpetId"], version=4),
+            board_index=json["attributes"]["data"].get("boardIndex", default=None),
+            mark_for_deletion=cls._mfd_from_json(json["attributes"]["markedForDeletion"]),
+            lang_id=json["attributes"]["data"].get("langID", default="en"),
+            rats=[await Rats.get_rat_by_uuid(UUID(rat["id"], version=4))
+                  for rat in json["relationships"]["rats"]["data"]]
+        )
+        if json["attributes"]["platform"] is None:
+            result.platform = Platforms.DEFAULT
+        else:
+            result.platform = Platforms[json["attributes"]["platform"].upper()]
+
+        return result
+
+    @classmethod
+    def _rescue_to_json(cls, rescue: Rescue) -> dict:
+        result = {
+            "client": rescue.client,
+            "system": rescue.system,
+            "status": rescue.status.name.lower(),
+            "unidentifiedRats": rescue.unidentified_rats,
+            "createdAt": rescue.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "updatedAt": rescue.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "quotes": list(map(cls._quotation_to_json, rescue.quotes)),
+            "title": rescue.title,
+            "codeRed": rescue.code_red,
+            "firstLimpetId": rescue.first_limpet,
+            "data": {
+                "IRCNick": rescue.irc_nickname,
+                "langID": rescue.lang_id.lower(),
+                "markedForDeletion": cls._mfd_to_json(rescue.marked_for_deletion)
+            }
+        }
+        if rescue.board_index is not None:
+            result["data"]["boardIndex"] = rescue.board_index
+
+        return result
+
+    @classmethod
+    def _rat_from_json(cls, json: dict):
+        return Rats(
+            uuid=UUID(json["id"], version=4),
+            name=json["attributes"]["name"],
+            platform=Platforms.DEFAULT if json["attributes"]["platform"] is None
+                     else Platforms[json["attributes"]["platform"].upper()]
+        )
