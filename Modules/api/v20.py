@@ -222,8 +222,8 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             system=json["attributes"]["system"],
             irc_nickname=json["attributes"]["data"]
                 .get("IRCNick", default=json["attributes"]["client"]),
-            created_at=datetime.strptime(json["attributes"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%f"),
-            updated_at=datetime.strptime(json["attributes"]["updatedAt"], "%Y-%m-%dT%H:%M:%S.%f"),
+            created_at=datetime.strptime(json["attributes"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ"),
+            updated_at=datetime.strptime(json["attributes"]["updatedAt"], "%Y-%m-%dT%H:%M:%S.%fZ"),
             unidentified_rats=json["attributes"]["unidentifiedRats"],
             quotes=list(map(cls._quotation_from_json, json["attributes"]["quotes"])),
             # epic=list(map(cls.)), TODO: Add getting epics
