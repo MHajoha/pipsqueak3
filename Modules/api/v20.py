@@ -172,7 +172,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
     @classmethod
     def _quotation_from_json(cls, json: dict) -> Quotation:
         return Quotation(
-            message=json["messsage"],
+            message=json["message"],
             created_at=datetime.strptime(json["createdAt"], "%Y-%m-%dT%H:%M:%S.%f"),
             updated_at=datetime.strptime(json["updatedAt"], "%Y-%m-%dT%H:%M:%S.%f"),
             author=json["author"],
@@ -230,9 +230,9 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             title=json["attributes"]["title"],
             status=Status[json["attributes"]["status"].upper()],
             code_red=json["attributes"]["codeRed"],
-            first_limpet=UUID(json["firstLimpetId"], version=4),
+            first_limpet=UUID(json["attributes"]["firstLimpetId"], version=4),
             board_index=json["attributes"]["data"].get("boardIndex", None),
-            mark_for_deletion=cls._mfd_from_json(json["attributes"]["markedForDeletion"]),
+            mark_for_deletion=cls._mfd_from_json(json["attributes"]["data"]["markedForDeletion"]),
             lang_id=json["attributes"]["data"].get("langID", "en"),
             rats=[await Rats.get_rat_by_uuid(UUID(rat["id"], version=4))
                   for rat in json["relationships"]["rats"]["data"]]
