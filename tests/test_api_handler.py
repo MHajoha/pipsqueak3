@@ -34,7 +34,7 @@ def add_meta(data: dict) -> dict:
     ({"outcome": Not(None)},
      {"outcome": {"$not": None}}),
     ({"status": In(Status.OPEN, Status.CLOSED)},
-     {"status": ["open", "closed"]})
+     {"status": {"$in": ["open", "closed"]}})
 ])
 @pytest.mark.asyncio
 async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
