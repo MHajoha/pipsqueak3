@@ -5,7 +5,7 @@ import datetime
 import pytest
 
 from Modules.api import WebsocketAPIHandler20, WebsocketAPIHandler21
-from Modules.api.converter import Not, AnyOf
+from Modules.api.search import Not, In
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
 from utils.ratlib import Platforms, Status
@@ -33,7 +33,7 @@ def add_meta(data: dict) -> dict:
      {"updatedAt": "938-03-20T04:20:00.000000Z"}),
     ({"outcome": Not(None)},
      {"outcome": {"$not": None}}),
-    ({"status": AnyOf(Status.OPEN, Status.CLOSED)},
+    ({"status": In(Status.OPEN, Status.CLOSED)},
      {"status": ["open", "closed"]})
 ])
 @pytest.mark.asyncio
