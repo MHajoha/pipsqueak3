@@ -191,11 +191,12 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
 
     @classmethod
     def _mfd_from_json(cls, json: dict) -> MarkForDeletion:
-        return MarkForDeletion(
-            marked=json["marked"],
-            reporter=None if json["reporter"] == "Noone." else json["reporter"],
-            reason=None if json["reason"] == "None." else json["reason"]
-        )
+        if json.get("reporter", None) == "Noone.":
+            json["reporter"] = None
+        if json.get("reason", None) == "None.":
+            json["reason"] = None
+
+        return MarkForDeletion(**json)
 
     @classmethod
     def _mfd_to_json(cls, mfd: MarkForDeletion) -> dict:
