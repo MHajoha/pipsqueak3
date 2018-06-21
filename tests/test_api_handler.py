@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Union
 from uuid import UUID
 
 import datetime
@@ -12,7 +12,7 @@ from utils.ratlib import Platforms, Status
 from tests.mock_connection import MockWebsocketConnection
 
 
-def add_meta(data: dict) -> dict:
+def add_meta(data: Union[dict, list]) -> dict:
     return {
         "meta": {
             "count": 1,
@@ -20,9 +20,7 @@ def add_meta(data: dict) -> dict:
             "offset": 0,
             "total": 1
         },
-        "data": [
-            data
-        ]
+        "data": data
     }
 
 
@@ -43,7 +41,7 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
     handler, connection = handler_fx
     json_rescue, rescue = rescue_fx
 
-    connection.response = add_meta(json_rescue)
+    connection.response = add_meta([json_rescue])
     result = await handler.get_rescues(**criteria)
 
     assert connection.was_sent({
@@ -66,7 +64,7 @@ async def test_get_rats(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketCo
     handler, connection = handler_fx
     json_rat, rat = rats_fx
 
-    connection.response = add_meta(json_rat)
+    connection.response = add_meta([json_rat])
     result = await handler.get_rats(**criteria)
 
     assert connection.was_sent({
@@ -84,7 +82,8 @@ async def test_get_rescue_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWeb
     handler, connection = handler_fx
     json_rescue, rescue = rescue_fx
 
-    connection.response = add_meta(json_rescue)
+    connection.response = add_meta(json_rescue if type(handler) is WebsocketAPIHandler21
+                                   else [json_rescue])
     result = await handler.get_rescue_by_id(
         UUID("bede70e3-a695-448a-8376-ecbcf74385b6"))
 
@@ -102,7 +101,8 @@ async def test_get_rat_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
     handler, connection = handler_fx
     json_rat, rat = rats_fx
 
-    connection.response = add_meta(json_rat)
+    connection.response = add_meta(json_rat if type(handler) is WebsocketAPIHandler21
+                                   else [json_rat])
     result = await handler.get_rat_by_id(
         UUID("bede70e3-a695-448a-8376-ecbcf74385b6"))
 
