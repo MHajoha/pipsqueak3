@@ -262,7 +262,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             "quotes": list(map(cls._quotation_to_json, rescue.quotes)),
             "title": rescue.title,
             "codeRed": rescue.code_red,
-            "firstLimpetId": rescue.first_limpet,
+            "firstLimpetId": str(rescue.first_limpet),
             "data": {
                 "IRCNick": rescue.irc_nickname,
                 "langID": rescue.lang_id.lower(),
