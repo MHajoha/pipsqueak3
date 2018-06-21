@@ -471,6 +471,7 @@ def rescue_fx():
             )
         ]
     )
+    model_rescue.platform = Platforms.PC
 
     return json_rescue, model_rescue
 
