@@ -84,14 +84,14 @@ class Search(object):
         for key, value in criteria.items():
             json_key, types, sanitize = self._criteria[key]
 
-            if types is not None:
-                check_type(value, *types)
-
             if isinstance(value, _SequelizeOperator):
                 set_nested(result, json_key, value.generate(sanitize))
-            elif sanitize is None:
-                set_nested(result, json_key, value)
-            else:
-                set_nested(result, json_key, sanitize(value))
+            elif types is not None:
+                check_type(value, *types)
+
+                if sanitize is None:
+                    set_nested(result, json_key, value)
+                else:
+                    set_nested(result, json_key, sanitize(value))
 
         return result
