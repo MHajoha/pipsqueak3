@@ -28,7 +28,7 @@ class _UnaryOp(_SequelizeOperator):
         self._value = value
 
     def generate(self, sanitize: Callable=None) -> dict:
-        if sanitize is None:
+        if sanitize is None or self._value is None:
             return {self._op: self._value}
         else:
             return {self._op: sanitize(self._value)}
@@ -52,7 +52,8 @@ class _SequenceOperator(_SequelizeOperator):
         if sanitize is None:
             return {self._op: list(self._values)}
         else:
-            return {self._op: [sanitize(value) for value in self._values]}
+            return {self._op: [None if value is None else sanitize(value)
+                               for value in self._values]}
 
 
 class In(_SequenceOperator):
@@ -89,7 +90,7 @@ class Search(object):
             elif types is not None:
                 check_type(value, *types)
 
-                if sanitize is None:
+                if sanitize is None or value is None:
                     set_nested(result, json_key, value)
                 else:
                     set_nested(result, json_key, sanitize(value))
