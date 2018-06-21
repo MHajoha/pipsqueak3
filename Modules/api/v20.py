@@ -15,6 +15,7 @@ from functools import partial
 from uuid import UUID
 
 from Modules.api.search import Search
+from Modules.api.versions import Version
 from Modules.epic import Epic
 from Modules.mark_for_deletion import MarkForDeletion
 from Modules.rat_quotation import Quotation
@@ -27,7 +28,7 @@ from .websocket import WebsocketRequestHandler
 
 class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
     """Handler for API version 2.0."""
-    api_version = "v2.0"
+    api_version: Version = Version.V_20
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

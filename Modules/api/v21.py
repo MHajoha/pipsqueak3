@@ -13,13 +13,14 @@ from typing import Union, List
 from uuid import UUID
 
 from Modules.api.v20 import WebsocketAPIHandler20
+from Modules.api.versions import Version
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
 
 
 class WebsocketAPIHandler21(WebsocketAPIHandler20):
     """Handler for API version 2.1."""
-    api_version = "v2.1"
+    api_version: Version = Version.V_21
 
     async def get_rescues(self, **criteria) -> List[Rescue]:
         """Get all rescues from the API matching the criteria provided."""

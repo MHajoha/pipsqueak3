@@ -17,6 +17,7 @@ from uuid import UUID, uuid4
 
 import websockets
 
+from Modules.api.versions import Version
 from config import config
 from .exceptions import NotConnectedError, MismatchedVersionError, APIError, UnauthorizedError, \
     ForbiddenError, InternalAPIError
@@ -30,7 +31,7 @@ class WebsocketRequestHandler(ABC):
     Defines methods for requests and all that rubbish.
     """
 
-    api_version = abstractproperty()
+    api_version: Version = abstractproperty()
     """API version. To be overloaded in subclasses."""
 
     def __init__(self, hostname: str, token: str=None, tls=True, *,
@@ -86,9 +87,9 @@ class WebsocketRequestHandler(ABC):
         # Grab the connect message and compare versions
         try:
             connect_message = json.loads(await self._connection.recv())
-            if connect_message["meta"]["API-Version"] != self.api_version:
+            if connect_message["meta"]["API-Version"] != self.api_version[0]:
                 await self._connection.close(reason="Mismatched version")
-                raise MismatchedVersionError(self.api_version,
+                raise MismatchedVersionError(self.api_version[0],
                                              connect_message["meta"]["API-Version"])
         except json.JSONDecodeError:
             await self._connection.close(reason="Mismatched version")

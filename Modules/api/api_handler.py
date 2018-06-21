@@ -13,6 +13,7 @@ from typing import Union, List
 from abc import ABC, abstractmethod, abstractproperty
 from uuid import UUID
 
+from Modules.api.versions import Version
 from Modules.rat_board import RatBoard
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
@@ -20,7 +21,7 @@ from Modules.rats import Rats
 
 class APIHandler(ABC):
     """Defines the public interface of an API handler."""
-    api_version = abstractproperty()
+    api_version: Version = abstractproperty()
     board: RatBoard = None
     """Board object updates from the API should be sent to. To be set by the board."""
 
