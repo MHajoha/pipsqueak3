@@ -110,6 +110,13 @@ class Singleton(object):
         super().__init_subclass__(**kwargs)
 
 
+class Outcome(Enum):
+    SUCCESS = "success"
+    FAILURE = "failure"
+    OTHER = "other"
+    INVALID = "invalid"
+
+
 def sanitize(message: str) -> str:
     """
     Sanitizes and makes safe any text passed by removing mIRC Color,

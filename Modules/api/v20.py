@@ -8,6 +8,7 @@ Licensed under the BSD 3-Clause License.
 
 See LICENSE.md
 """
+from operator import attrgetter
 from datetime import datetime
 from typing import Union, List
 from functools import partial
@@ -21,7 +22,7 @@ from Modules.mark_for_deletion import MarkForDeletion
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
-from utils.ratlib import Status, Platforms
+from utils.ratlib import Status, Platforms, Outcome
 from .api_handler import APIHandler
 from .websocket import WebsocketRequestHandler
 
@@ -54,6 +55,8 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         self._rescue_search.add("marked_for_deletion", "data.markedForDeletion.marked", types=bool)
         self._rescue_search.add("irc_nickname", "IRCNick", types=str)
         self._rescue_search.add("lang_id", "data.langID", types=str)
+        self._rescue_search.add("outcome", "outcome", types=Outcome,
+                                sanitize=attrgetter("value"))
 
         self._rat_search = Search()
         self._rat_search.add("id", "id", types=UUID, sanitize=str)
