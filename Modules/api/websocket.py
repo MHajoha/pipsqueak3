@@ -87,7 +87,7 @@ class WebsocketRequestHandler(ABC):
         # Grab the connect message and compare versions
         try:
             connect_message = json.loads(await self._connection.recv())
-            if connect_message["meta"]["API-Version"] != self.api_version[0]:
+            if connect_message["meta"]["API-Version"] != self.api_version.value[0]:
                 await self._connection.close(reason="Mismatched version")
                 raise MismatchedVersionError(self.api_version[0],
                                              connect_message["meta"]["API-Version"])

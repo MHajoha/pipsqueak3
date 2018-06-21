@@ -144,3 +144,10 @@ class MarkForDeletion(object):
             self._reporter = value
         else:
             raise TypeError
+
+    def __eq__(self, other):
+        if isinstance(other, MarkForDeletion):
+            return self.marked is other.marked and self.reason == other.reason \
+                   and self.reporter == other.reporter
+        else:
+            return NotImplemented

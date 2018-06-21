@@ -343,7 +343,7 @@ async def handler_fx(request):
     connection = MockWebsocketConnection(instance)
     connection.incoming_messages.append({
         "meta": {
-            "API-Version": request.param.api_version
+            "API-Version": request.param.api_version.value[0]
         }
     })
 
