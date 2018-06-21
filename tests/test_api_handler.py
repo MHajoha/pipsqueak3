@@ -52,7 +52,7 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
     })
 
     assert len(result) == 1
-    assert result.pop() == rescue
+    assert result[0] == rescue
 
 
 @pytest.mark.parametrize("criteria,expected_request", [
@@ -75,7 +75,7 @@ async def test_get_rats(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketCo
     })
 
     assert len(result) == 1
-    assert result.pop() == rat
+    assert result[0] == rat
 
 
 @pytest.mark.asyncio
