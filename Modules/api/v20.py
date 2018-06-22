@@ -56,7 +56,10 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         self._rescue_search.add("irc_nickname", "IRCNick", types=str)
         self._rescue_search.add("lang_id", "data.langID", types=str)
         self._rescue_search.add("outcome", "outcome", types=Outcome,
-                                sanitize=attrgetter("value"))
+                                sanitize=attrgetter("value")),
+        self._rescue_search.add("platform", "platform", types=Platforms,
+                                sanitize=lambda platform: None if platform is Platforms.DEFAULT
+                                                          else platform.name.lower())
 
         self._rat_search = Search()
         self._rat_search.add("id", "id", types=UUID, sanitize=str)
@@ -263,6 +266,8 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             "title": rescue.title,
             "codeRed": rescue.code_red,
             "firstLimpetId": str(rescue.first_limpet),
+            "platform": None if rescue.platform is Platforms.DEFAULT
+                        else rescue.platform.name.lower(),
             "data": {
                 "IRCNick": rescue.irc_nickname,
                 "langID": rescue.lang_id.lower(),
