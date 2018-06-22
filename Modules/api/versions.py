@@ -32,8 +32,8 @@ class Version(Enum):
         >>> Version.V_20 >= Version.V_21
         False
     """
-    V_20 = ["v2.0", 200]
-    V_21 = ["v2.1", 210]
+    V_20 = ("v2.0", 200)
+    V_21 = ("v2.1", 210)
 
     def __lt__(self, other):
         if isinstance(other, Version):
