@@ -56,7 +56,7 @@ def require_api_version(version: Version, exact: bool=False):
     def dec(fun):
         def wrapper(context: Context):
             actual_version: Version = context.bot.api_handler.api_version.value
-            if exact and actual_version[1] == version[1] or actual_version[1] >= version[1]:
+            if exact and actual_version == version or actual_version >= version:
                 return fun(context)
             else:
                 log.warning(f"Command {context.words[0]} not executed as current API version "
