@@ -374,13 +374,12 @@ def rescue_fx():
             "codeRed": False,
             "data": {
                 "langID": "en",
-                "status": {},
                 "IRCNick": "Some_Client",
                 "boardIndex": 9,
                 "markedForDeletion": {
                     "marked": False,
-                    "reason": "None.",
-                    "reporter": "Noone."
+                    "reason": None,
+                    "reporter": None
                 }
             },
             "notes": "Friendly client had run out of fuel in his Farragut Battle Cruiser. DB appreciated.",
@@ -406,8 +405,8 @@ def rescue_fx():
             "title": "Operation Go Away",
             "outcome": "success",
             "unidentifiedRats": ["unable_to_use_nickserv[PC]"],
-            "createdAt": "2018-01-07T22:48:38.123Z",
-            "updatedAt": "2018-01-08T10:34:40.123Z",
+            "createdAt": "2018-01-07T22:48:38.123000Z",
+            "updatedAt": "2018-01-08T10:34:40.123000Z",
             "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"
         },
         "relationships": {

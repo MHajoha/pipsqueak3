@@ -122,8 +122,11 @@ async def test_update_rescue(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
     connection.response = {"the api handler": "is going to ignore this"}
     await handler.update_rescue(rescue)
 
+    json_rescue["attributes"].pop("notes")
+    json_rescue["attributes"].pop("outcome")
+
     assert connection.was_sent({
         "action": ["rescues", "update"],
         "id": str(rescue.uuid),
-        "data": json_rescue
+        "data": json_rescue["attributes"]
     })
