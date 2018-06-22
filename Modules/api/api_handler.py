@@ -60,15 +60,39 @@ class APIHandler(ABC):
 
     @abstractmethod
     async def update_rescue(self, rescue: Rescue, full: bool=True):
-        """Update a rescue's data in the API."""
+        """
+        Update a rescue's data in the API.
+
+        Arguments:
+            rescue (Rescue): Rescue to be updated in the API.
+            full (bool): If this is True, all rescue data will be sent. Otherwise, only properties
+                that have changed.
+
+        Raises:
+            ValueError: If *rescue* doesn't have its case ID set.
+        """
 
     @abstractmethod
     async def create_rescue(self, rescue: Rescue) -> UUID:
-        """Create a rescue within the API."""
+        """
+        Create a rescue within the API.
+
+        Raises:
+            ValueError: If the provided rescue already has its ID set.
+        """
 
     @abstractmethod
     async def delete_rescue(self, rescue: Union[Rescue, UUID]):
-        """Delete a rescue in the API."""
+        """
+        Delete a rescue in the API.
+
+        Arguments:
+            rescue (Rescue or UUID): Rescue to delete. Can be either a UUID or a Rescue object.
+                In the latter case, the rescue's ID must not be None.
+
+        Raises:
+            ValueError: If a Rescue object without its ID set was provided.
+        """
 
     @abstractmethod
     async def get_rescues(self, **criteria) -> List[Rescue]:

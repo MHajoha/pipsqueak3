@@ -23,7 +23,6 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
     api_version: Version = Version.V_21
 
     async def get_rescues(self, **criteria) -> List[Rescue]:
-        """Get all rescues from the API matching the criteria provided."""
         data = self._rescue_search.generate(criteria)
         data["action"] = ("rescues", "search")
 

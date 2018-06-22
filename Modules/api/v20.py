@@ -69,17 +69,6 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
                                                        else platform.name.lower())
 
     async def update_rescue(self, rescue, full: bool=True):
-        """
-        Update a rescue's data in the API.
-
-        Arguments:
-            rescue (Rescue): Rescue to be updated in the API.
-            full (bool): If this is True, all rescue data will be sent. Otherwise, only properties
-                that have changed.
-
-        Raises:
-            ValueError: If *rescue* doesn't have its case ID set.
-        """
         if rescue.uuid is None:
             raise ValueError("Cannot send rescue without ID to the API")
         else:
@@ -88,12 +77,7 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
                                  "data": self._rescue_to_json(rescue)})
 
     async def create_rescue(self, rescue: Rescue) -> UUID:
-        """
-        Create a rescue within the API.
 
-        Raises:
-            ValueError: If the provided rescue already has its ID set.
-        """
         if rescue.uuid is None:
             response = await self._request({"action": ("rescues", "create"),
                                             "data": self._rescue_to_json(rescue)})
@@ -103,16 +87,6 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
             raise ValueError("cannot send rescue which already has api id set")
 
     async def delete_rescue(self, rescue: Union[Rescue, UUID]):
-        """
-        Delete a rescue in the API.
-
-        Arguments:
-            rescue (Rescue or UUID): Rescue to delete. Can be either a UUID or a Rescue object.
-                In the latter case, the rescue's ID must not be None.
-
-        Raises:
-            ValueError: If a Rescue object without its ID set was provided.
-        """
         if isinstance(rescue, Rescue):
             if rescue.uuid is None:
                 raise ValueError("cannot delete rescue without ID in the api")
@@ -123,7 +97,6 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
                              "id": str(rescue)})
 
     async def get_rescues(self, **criteria) -> List[Rescue]:
-        """Get all rescues from the API matching the criteria provided."""
         data = self._rescue_search.generate(criteria)
         data["action"] = ("rescues", "read")
 
@@ -136,11 +109,9 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         return results
 
     async def get_rescue_by_id(self, id: Union[str, UUID]) -> Rescue:
-        """Get rescue with the provided ID."""
         return (await self.get_rescues(id=id))[0]
 
     async def get_rats(self, **criteria) -> List[Rats]:
-        """Get all rats from the API matching the criteria provided."""
         data = self._rat_search.generate(criteria)
         data["action"] = ("rats", "read")
 
@@ -153,7 +124,6 @@ class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
         return results
 
     async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
-        """Get rat with the provided ID."""
         return (await self.get_rats(id=id))[0]
 
     async def _handle_update(self, data: dict, event: str):
