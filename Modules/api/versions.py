@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 @total_ordering
 class Version(Enum):
     """
-    Represents an API version with it's string representation and a string representation for
+    Represents an API version with it's string representation and an integer representation for
     comparisons.
 
     These are comparable, where more recent API versions are 'greater' than older ones.
