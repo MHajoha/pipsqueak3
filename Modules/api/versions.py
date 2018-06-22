@@ -11,19 +11,35 @@ See LICENSE.md
 from enum import Enum
 
 import logging
+from functools import total_ordering
 
 from Modules.context import Context
 
 log = logging.getLogger(__name__)
 
 
+@total_ordering
 class Version(Enum):
     """
     Represents an API version with it's string representation and a string representation for
     comparisons.
+
+    These are comparable, where more recent API versions are 'greater' than older ones.
+
+    Examples:
+        >>> Version.V_20 < Version.V_21
+        True
+        >>> Version.V_20 >= Version.V_21
+        False
     """
     V_20 = ["v2.0", 200]
     V_21 = ["v2.1", 210]
+
+    def __lt__(self, other):
+        if isinstance(other, Version):
+            return self.value[1] < other.value[1]
+        else:
+            return NotImplemented
 
 
 def require_api_version(version: Version, exact: bool=False):
