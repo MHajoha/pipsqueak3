@@ -8,24 +8,27 @@ Licensed under the BSD 3-Clause License.
 
 See LICENSE.md
 """
-from abc import ABC, abstractmethod
-from typing import Callable, Dict, Tuple, Any, Union, Sequence
+from abc import abstractmethod
+from typing import Callable, Dict, Tuple, Any, Union, Sequence, Generic, TypeVar
 
+from utils.abstract import abstract
 from utils.nested import set_nested
 from utils.typechecking import check_type
 
 
-class SequelizeOperator(ABC):
+T = TypeVar("T")
+@abstract
+class SequelizeOperator(Generic[T]):
     @abstractmethod
     def generate(self, sanitize: Callable=None) -> Union[dict, list]:
         pass
 
 
-class _UnaryOp(SequelizeOperator):
-    _op = None
+class _UnaryOp(SequelizeOperator[T], Generic[T]):
+    _op: str = None
 
-    def __init__(self, value):
-        self._value = value
+    def __init__(self, value: T):
+        self._value: T = value
 
     def generate(self, sanitize: Callable=None) -> dict:
         if sanitize is None or self._value is None:
@@ -34,19 +37,19 @@ class _UnaryOp(SequelizeOperator):
             return {self._op: sanitize(self._value)}
 
 
-class Not(_UnaryOp):
+class Not(_UnaryOp[T], Generic[T]):
     _op = "$not"
 
 
-class Contains(_UnaryOp):
+class Contains(_UnaryOp[T], Generic[T]):
     _op = "$contains"
 
 
-class _SequenceOperator(SequelizeOperator):
+class _SequenceOperator(SequelizeOperator[T], Generic[T]):
     _op = None
 
-    def __init__(self, *values):
-        self._values = values
+    def __init__(self, *values: T):
+        self._values: Tuple[T] = values
 
     def generate(self, sanitize: Callable=None) -> dict:
         if sanitize is None:
@@ -56,11 +59,11 @@ class _SequenceOperator(SequelizeOperator):
                                for value in self._values]}
 
 
-class In(_SequenceOperator):
+class In(_SequenceOperator[T], Generic[T]):
     _op = "$in"
 
 
-class NotIn(SequelizeOperator):
+class NotIn(_SequenceOperator[T], Generic[T]):
     _op = "$notIn"
 
 
