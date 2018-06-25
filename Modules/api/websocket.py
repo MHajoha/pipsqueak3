@@ -113,22 +113,6 @@ class WebsocketRequestHandler(ABC):
         await self._connection.close()
         log.info("Disconnected from API")
 
-    async def modify(self, hostname: str=None, token: str=None, tls: bool=None):
-        """
-        Change hostname, token or tls properties and reconnect with new values if necessary.
-        This method should be used to change any of those things.
-        """
-        if hostname:
-            self._hostname = hostname
-        if token:
-            self._token = token
-        if tls:
-            self._tls = tls
-
-        if self.connected and (hostname is not None or token is not None or tls is not None):
-            await self.disconnect()
-            await self.connect()
-
     @abstractmethod
     async def _handle_update(self, data: dict, event: str):
         """Handle an update from the API."""
