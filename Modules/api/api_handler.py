@@ -8,16 +8,22 @@ Licensed under the BSD 3-Clause License.
 
 See LICENSE.md
 """
-
-from typing import Union, List
+from datetime import datetime
+from typing import Union, List, Optional, Iterable
 from abc import ABC, abstractmethod, abstractproperty
 from uuid import UUID
 
+from Modules.api.search import SequelizeOperator
 from Modules.api.versions import Version
+from Modules.mark_for_deletion import MarkForDeletion
 from Modules.rat_board import RatBoard
+from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
+from utils.ratlib import Status, Outcome, Platforms
 
+
+_UNSET = object()
 
 class APIHandler(ABC):
     """Defines the public interface of an API handler."""
@@ -55,10 +61,6 @@ class APIHandler(ABC):
         """
 
     @abstractmethod
-    async def modify(self, hostname: str=None, token: str=None, tls: bool=None):
-        """Change hostname, token or tls properties."""
-
-    @abstractmethod
     async def update_rescue(self, rescue: Rescue, full: bool=True):
         """
         Update a rescue's data in the API.
@@ -70,6 +72,7 @@ class APIHandler(ABC):
 
         Raises:
             ValueError: If *rescue* doesn't have its case ID set.
+            NotConnectedError: If this instance is not connected.
         """
 
     @abstractmethod
@@ -79,6 +82,7 @@ class APIHandler(ABC):
 
         Raises:
             ValueError: If the provided rescue already has its ID set.
+            NotConnectedError: If this instance is not connected.
         """
 
     @abstractmethod
@@ -92,20 +96,87 @@ class APIHandler(ABC):
 
         Raises:
             ValueError: If a Rescue object without its ID set was provided.
+            NotConnectedError: If this instance is not connected.
         """
 
     @abstractmethod
-    async def get_rescues(self, **criteria) -> List[Rescue]:
-        """Get all rescues from the API matching the criteria provided."""
+    async def get_rescues(self, *,
+                          id: Union[UUID, SequelizeOperator[UUID]]=_UNSET,
+                          client: Union[str, SequelizeOperator[str]]=_UNSET,
+                          system: Union[str, SequelizeOperator[str]]=_UNSET,
+                          status: Union[Status, SequelizeOperator[Status]]=_UNSET,
+                          unidentified_rats: Union[Iterable[str],
+                                                   SequelizeOperator[Iterable[str]]]=_UNSET,
+                          created_at: Union[datetime, SequelizeOperator[datetime]]=_UNSET,
+                          updated_at: Union[datetime, SequelizeOperator[datetime]]=_UNSET,
+                          quotes: Union[Iterable[Quotation],
+                                        SequelizeOperator[Iterable[Quotation]]]=_UNSET,
+                          title: Union[str, SequelizeOperator[Optional[str]], None]=_UNSET,
+                          code_red: Union[bool, SequelizeOperator[bool]]=_UNSET,
+                          first_limpet: Union[Rats, SequelizeOperator[Rats]]=_UNSET,
+                          marked_for_deletion: Union[MarkForDeletion,
+                                                     SequelizeOperator[MarkForDeletion]]=_UNSET,
+                          irc_nickname: Union[str, SequelizeOperator[str]]=_UNSET,
+                          lang_id: Union[str, SequelizeOperator[str]]=_UNSET,
+                          outcome: Union[Outcome,
+                                         SequelizeOperator[Optional[Outcome]], None]=_UNSET,
+                          platform: Union[Platforms, SequelizeOperator[Platforms]]=_UNSET
+                          ) -> List[Rescue]:
+        """
+        Get all rescues from the API matching the criteria provided.
+        A criterion can be wrapped in a subclass of :class:`SequelizeOperator`.
+
+        All API handlers must implement the following parameters, but may add more.
+        Such extra parameters should only be used after checking the handler's version.
+
+        Arguments:
+            id (UUID)
+            client (str)
+            system (str)
+            status (Status)
+            unidentified_rats (list of str)
+            created_at (datetime)
+            updated_at (datetime)
+            quotes (list of Quotation)
+            title (str)
+            code_red (bool)
+            first_limpet (Rats)
+            marked_for_deletion (MarkForDeletion)
+            irc_nickname (str)
+            lang_id (str)
+            outcome (Outcome)
+            platform (Platforms)
+
+        Raises:
+            NotConnectedError: If this instance is not connected.
+        """
 
     @abstractmethod
     async def get_rescue_by_id(self, id: Union[str, UUID]) -> Rescue:
-        """Get rescue with the provided ID."""
+        """
+        Get rescue with the provided ID.
+
+        Raises:
+            NotConnectedError: If this instance is not connected.
+        """
 
     @abstractmethod
-    async def get_rats(self, **criteria) -> List[Rats]:
-        """Get all rats from the API matching the criteria provided."""
+    async def get_rats(self, *,
+                       id: Union[UUID, SequelizeOperator[UUID]],
+                       name: Union[str, SequelizeOperator[str]],
+                       platform: Union[Platforms, SequelizeOperator[Platforms]]) -> List[Rats]:
+        """
+        Get all rats from the API matching the criteria provided.
+
+        Raises:
+            NotConnectedError: If this instance is not connected.
+        """
 
     @abstractmethod
     async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
-        """Get rat with the provided ID."""
+        """
+        Get rat with the provided ID.
+
+        Raises:
+            NotConnectedError: If this instance is not connected.
+        """
