@@ -15,13 +15,13 @@ from utils.nested import set_nested
 from utils.typechecking import check_type
 
 
-class _SequelizeOperator(ABC):
+class SequelizeOperator(ABC):
     @abstractmethod
     def generate(self, sanitize: Callable=None) -> Union[dict, list]:
         pass
 
 
-class _UnaryOp(_SequelizeOperator):
+class _UnaryOp(SequelizeOperator):
     _op = None
 
     def __init__(self, value):
@@ -42,7 +42,7 @@ class Contains(_UnaryOp):
     _op = "$contains"
 
 
-class _SequenceOperator(_SequelizeOperator):
+class _SequenceOperator(SequelizeOperator):
     _op = None
 
     def __init__(self, *values):
@@ -60,7 +60,7 @@ class In(_SequenceOperator):
     _op = "$in"
 
 
-class NotIn(_SequelizeOperator):
+class NotIn(SequelizeOperator):
     _op = "$notIn"
 
 
@@ -85,7 +85,7 @@ class Search(object):
         for key, value in criteria.items():
             json_key, types, sanitize = self._criteria[key]
 
-            if isinstance(value, _SequelizeOperator):
+            if isinstance(value, SequelizeOperator):
                 set_nested(result, json_key, value.generate(sanitize))
             elif types is not None:
                 check_type(value, *types)
