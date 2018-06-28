@@ -100,10 +100,7 @@ class WebsocketRequestHandler(Abstract):
         if self.connected:
             raise NotConnectedError(f"Already connected to a server: {self._connection.host}")
 
-        uri = f"wss://{self._hostname}" if self._tls else f"ws://{self._hostname}"
-        if self._token:
-            uri += f"/?bearer={self._token}"
-
+        uri = _generate_ws_uri(self._hostname, token=self._token, tls=self._tls)
         self._connection = await websockets.connect(uri, loop=self._loop)
 
         # Grab the connect message and compare versions
@@ -263,3 +260,23 @@ class WebsocketRequestHandler(Abstract):
                 log.error(f"Received unknown error code '{response['code']}' from the API")
         else:
             return response
+
+
+def _generate_ws_uri(hostname: str, path: str= "/", token: str=None, tls=True) -> str:
+    """
+    Get the URI for the specified parts.
+
+    Args:
+        hostname (str): DNS hostname or IP address of the target.
+        path (str): Path on the target. Defaults to `/`.
+        token (str): Token to provide on connection via query parameter (`?bearer=my-token`)
+        tls (bool): Whether to connect using TLS / SSL.
+
+    Returns:
+        str: Complete URI of the pattern '`ws(s)://<hostname>/<path>?bearer=<token>`' containing the
+            provided parts.
+    """
+    uri = f"wss://{hostname}{path}" if tls else f"ws://{hostname}{path}"
+    if token:
+        uri += f"?bearer={token}"
+    return uri
