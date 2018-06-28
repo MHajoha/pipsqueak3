@@ -11,13 +11,14 @@ See LICENSE.md
 import asyncio
 import json
 import logging
-from abc import abstractproperty, abstractmethod
+from abc import abstractmethod
 from json import JSONDecodeError
 from typing import Set, Dict, Any, Union, Optional
 from uuid import UUID, uuid4
 
 import websockets
 
+from Modules.api.api_handler import APIHandler
 from Modules.api.versions import Version
 from config import config
 from utils.abstract import Abstract
@@ -27,14 +28,11 @@ from .exceptions import NotConnectedError, MismatchedVersionError, APIError, Una
 log = logging.getLogger(f"{config['logging']['base_logger']}.{__name__}")
 
 
-class WebsocketRequestHandler(Abstract):
+class BaseWebsocketAPIHandler(APIHandler, Abstract):
     """
     Base class for API Handlers.
     Defines methods for requests and all that rubbish.
     """
-
-    api_version: Version = abstractproperty()
-    """API version. To be overloaded in subclasses."""
 
     def __init__(self, hostname: str, token: str=None, tls=True, *,
                  loop: asyncio.BaseEventLoop=None,

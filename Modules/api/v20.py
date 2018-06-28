@@ -23,11 +23,10 @@ from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
 from utils.ratlib import Status, Platforms, Outcome
-from .api_handler import APIHandler
-from .websocket import WebsocketRequestHandler
+from .websocket import BaseWebsocketAPIHandler
 
 
-class WebsocketAPIHandler20(WebsocketRequestHandler, APIHandler):
+class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
     """Handler for API version 2.0."""
     api_version: Version = Version.V_20
     
