@@ -32,14 +32,20 @@ class Version(Enum):
         >>> Version.V_20 >= Version.V_21
         False
     """
-    V_20 = ("v2.0", 200)
-    V_21 = ("v2.1", 210)
+    V_20 = "v2.0"
+    V_21 = "v2.1"
 
     def __lt__(self, other):
         if isinstance(other, Version):
-            return self.value[1] < other.value[1]
+            return _version_int_values[self] < _version_int_values[other]
         else:
             return NotImplemented
+
+
+_version_int_values = {
+    Version.V_20: 200,
+    Version.V_21: 210
+}
 
 
 def require_api_version(version: Version, exact: bool=False):
