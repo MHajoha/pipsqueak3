@@ -1,68 +1,62 @@
 from abc import abstractmethod
-from typing import Tuple
+from functools import wraps
+from typing import Tuple, Callable
 
 
-def abstract(klass: type) -> type:
+class Abstract(object):
     """
-    Class decorator to prevent a class and all of its subclasses from being instantiated if not all
-    abstract members have been overridden.
+    Base class to create abstract classes without the need for metaclasses (unlike :class:`ABC`),
+    allowing the use with other metaclass-based utilities (such as generics).
 
-    Args:
-        klass: Class which the decorator is used on.
-
-    Returns:
-        type: *klass*, with its `__init_subclass__`  and `__new__` methods replaced.
-
-    The decorated class can not be instantiated. Subclasses of the decorated class can only be
-    instantiated if they override all abstract members of their superclasses.
+    The derived class can not be instantiated. Indirect subclasses must either override all abstract
+    members or be themselves abstract (by inheriting directly from :class:`Abstract`).
 
     Examples:
-        >>> @abstract
-        ... class MyAbstractClass(object):
+        >>> class MyAbstractClass(Abstract):
         ...     @abstractmethod
         ...     def foo(self): ...
         >>> MyAbstractClass()
         Traceback (most recent call last):
-            ...
-        TypeError: cannot instantiate abstract class
+          ...
+        TypeError: cannot initialize abstract class MyAbstractClass
 
         >>> class MyBadlyDerivedClass(MyAbstractClass):
         ...     pass
-        >>> MyBadlyDerivedClass()
         Traceback (most recent call last):
-            ...
-        TypeError: must override abstract member(s): foo
+          ...
+        TypeError: must override abstract members foo or make class MyBadlyDerivedClass itself abstract
 
-        >>> class MyWellDerivedClass(MyBadlyDerivedClass):
+        >>> class MyWellDerivedClass(MyAbstractClass):
         ...     def foo(self):
         ...         print("Success!")
         >>> MyWellDerivedClass().foo()
         Success!
     """
-    original_new = klass.__new__
-    original_init_subclass = klass.__init_subclass__
-
-    def repl_init_subclass(cls, *args, **kwargs):
-        original_init_subclass(*args, **kwargs)
-
+    def __init_subclass__(cls):
         abstracts = _get_abstracts(cls)
-        if len(abstracts) > 0:
-            def repl_subclass_new(*_, **__):
-                raise TypeError(f"must override abstract member(s): {', '.join(abstracts)}")
-            cls.__new__ = repl_subclass_new
+        if Abstract not in cls.__bases__ and len(abstracts) > 0:
+            raise TypeError(f"must override abstract members {', '.join(abstracts)} or make class "
+                            f"{cls.__name__} itself abstract")
         else:
-            cls.__new__ = original_new
-            cls.__init_subclass__ = original_init_subclass
+            if not getattr(cls.__new__, "_is_abstract_replacement", False):
+                cls.__new__ = _abstract_repl_new(cls.__new__)
 
-    def repl_new(cls, *args, **kwargs):
-        if cls is klass:
-            raise TypeError("cannot instantiate abstract class")
+
+def _abstract_repl_new(fun: Callable):
+    @wraps(fun)
+    def wrapper(cls: type, *args, **kwargs):
+        if Abstract in cls.__bases__:
+            raise TypeError(f"cannot initialize abstract class {cls.__name__}")
         else:
-            return original_new(cls, *args, **kwargs)
-
-    klass.__init_subclass__ = classmethod(repl_init_subclass)
-    klass.__new__ = repl_new
-    return klass
+            try:
+                return fun(cls, *args, **kwargs)
+            except TypeError as te:
+                if te.args == ("object() takes no parameters",):
+                    return fun(cls)
+                else:
+                    raise te
+    wrapper._is_abstract_replacement = True
+    return wrapper
 
 
 def _get_abstracts(klass: type) -> Tuple[str, ...]:

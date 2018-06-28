@@ -11,7 +11,7 @@ See LICENSE.md
 import asyncio
 import json
 import logging
-from abc import ABC, abstractproperty, abstractmethod
+from abc import abstractproperty, abstractmethod
 from typing import Set, Dict, Any, Union
 from uuid import UUID, uuid4
 
@@ -19,13 +19,14 @@ import websockets
 
 from Modules.api.versions import Version
 from config import config
+from utils.abstract import Abstract
 from .exceptions import NotConnectedError, MismatchedVersionError, APIError, UnauthorizedError, \
     ForbiddenError, InternalAPIError
 
 log = logging.getLogger(f"{config['logging']['base_logger']}.{__name__}")
 
 
-class WebsocketRequestHandler(ABC):
+class WebsocketRequestHandler(Abstract):
     """
     Base class for API Handlers.
     Defines methods for requests and all that rubbish.
