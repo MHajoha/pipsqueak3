@@ -40,7 +40,14 @@ class APIHandler(Abstract):
 
     @abstractmethod
     def __init__(self, hostname: str, token: str=None, tls=True):
-        """Initialize a new API handler object."""
+        """
+        Initialize a new API Handler.
+
+        Arguments:
+            hostname (str): Hostname to connect to.
+            token (str): OAuth token to be used for authorization or None if it's not needed.
+            tls (bool): Whether to use TLS when connecting or not ('ws:' versus 'wss:').
+        """
 
     @abstractmethod
     async def connect(self):

@@ -36,22 +36,43 @@ class WebsocketRequestHandler(Abstract):
     """API version. To be overloaded in subclasses."""
 
     def __init__(self, hostname: str, token: str=None, tls=True, *,
-                 loop: asyncio.BaseEventLoop=None):
+                 loop: asyncio.BaseEventLoop=None,
+                 connection: websockets.WebSocketClientProtocol=None):
         """
-        Create a new API Handler.
+        Initialize a new API Handler.
 
         Arguments:
-             hostname (str): Hostname to connect to.
-             token (str): OAuth token to be used for authorization or None if it's not needed.
-             tls (bool): Whether to use TLS when connecting or not ('ws:' versus 'wss:').
-             loop (asyncio.BaseEventLoop): Custom event loop to use. Defaults to global loop.
+            hostname (str): Hostname to connect to.
+            token (str): OAuth token to be used for authorization or None if it's not needed.
+            tls (bool): Whether to use TLS when connecting or not ('ws:' versus 'wss:').
+            loop (asyncio.BaseEventLoop): Custom event loop to use. Defaults to global loop.
+            connection (websockets.WebSocketClientProtocol): Connection to use. If this is given,
+                the handler will immediately be in a connected state. Overrides version checks.
+
+        Raises:
+            ValueError: When both *loop* and *connection* are provided but *connection* is not
+                running in *loop*.
         """
         self._hostname = hostname
         self._token = token
         self._tls = tls
 
-        self._loop = loop if loop else asyncio.get_event_loop()
-        self._connection: websockets.WebSocketClientProtocol = None
+        if connection is None:
+            if loop is None:
+                self._loop = asyncio.get_event_loop()
+            else:
+                self._loop = loop
+        else:
+            if loop is None:
+                self._loop = connection.loop
+            else:
+                if loop is connection.loop:
+                    self._loop = loop
+                else:
+                    raise ValueError("conflicting arguments: cannot run in a different event loop from "
+                                     "the connection")
+
+        self._connection: websockets.WebSocketClientProtocol = connection
 
         self._listener_task: asyncio.Task = None
         """See :meth:`self._message_handler`"""
