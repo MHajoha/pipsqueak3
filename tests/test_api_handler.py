@@ -4,8 +4,9 @@ from uuid import UUID
 import datetime
 import pytest
 
-from Modules.api import WebsocketAPIHandler20, WebsocketAPIHandler21
 from Modules.api.search import Not, In
+from Modules.api.v20 import WebsocketAPIHandler20
+from Modules.api.v21 import WebsocketAPIHandler21
 from Modules.rat_rescue import Rescue
 from Modules.rats import Rats
 from utils.ratlib import Platforms, Status

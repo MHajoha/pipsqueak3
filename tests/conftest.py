@@ -42,7 +42,6 @@ setup_logging("logs/unit_tests.log")
 
 from Modules.permissions import Permission
 from tests.mock_bot import MockBot
-from Modules.api import WebsocketAPIHandler20, WebsocketAPIHandler21
 from Modules.rat_board import RatBoard
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
@@ -56,6 +55,8 @@ from tests.mock_callables import CallableMock, AsyncCallableMock
 from database import DatabaseManager
 from Modules.fact import Fact
 from tests.mock_connection import MockWebsocketConnection
+from Modules.api.v20 import WebsocketAPIHandler20
+from Modules.api.v21 import WebsocketAPIHandler21
 
 
 @pytest.fixture(params=[("pcClient", Platforms.PC, "firestone", 24),
@@ -343,7 +344,7 @@ async def handler_fx(request):
     connection = MockWebsocketConnection(instance)
     connection.incoming_messages.append({
         "meta": {
-            "API-Version": request.param.api_version.value[0]
+            "API-Version": request.param.api_version.value
         }
     })
 

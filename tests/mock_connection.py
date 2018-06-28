@@ -3,7 +3,7 @@ import json
 from typing import Union
 from uuid import UUID
 
-from Modules.api import WebsocketAPIHandler20
+from Modules.api.v20 import WebsocketAPIHandler20
 
 
 class MockWebsocketConnection(object):

@@ -12,7 +12,8 @@ import asyncio
 import json
 import logging
 from abc import abstractproperty, abstractmethod
-from typing import Set, Dict, Any, Union
+from json import JSONDecodeError
+from typing import Set, Dict, Any, Union, Optional
 from uuid import UUID, uuid4
 
 import websockets
@@ -100,21 +101,18 @@ class WebsocketRequestHandler(Abstract):
         if self.connected:
             raise NotConnectedError(f"Already connected to a server: {self._connection.host}")
 
-        uri = _generate_ws_uri(self._hostname, token=self._token, tls=self._tls)
+        uri = generate_ws_uri(self._hostname, token=self._token, tls=self._tls)
         self._connection = await websockets.connect(uri, loop=self._loop)
 
         # Grab the connect message and compare versions
         try:
-            connect_message = json.loads(await self._connection.recv())
-            if connect_message["meta"]["API-Version"] != self.api_version.value[0]:
+            version = parse_connect_event(json.loads(await self._connection.recv()))
+        except JSONDecodeError as de:
+            raise APIError("connect message from the API could not be parsed") from de
+        else:
+            if version != self.api_version:
                 await self._connection.close(reason="Mismatched version")
-                raise MismatchedVersionError(self.api_version[0],
-                                             connect_message["meta"]["API-Version"])
-        except json.JSONDecodeError:
-            await self._connection.close(reason="Mismatched version")
-            raise APIError("Connect message from the API could not be parsed")
-        except KeyError:
-            log.warning("Did not receive version field from API")
+                raise MismatchedVersionError(self.api_version.value, version.value)
 
         self._listener_task = self._loop.create_task(self._message_handler())
         log.info(f"Connected to API at {uri}")
@@ -262,7 +260,7 @@ class WebsocketRequestHandler(Abstract):
             return response
 
 
-def _generate_ws_uri(hostname: str, path: str= "/", token: str=None, tls=True) -> str:
+def generate_ws_uri(hostname: str, path: str= "/", token: str=None, tls=True) -> str:
     """
     Get the URI for the specified parts.
 
@@ -280,3 +278,12 @@ def _generate_ws_uri(hostname: str, path: str= "/", token: str=None, tls=True) -
     if token:
         uri += f"?bearer={token}"
     return uri
+
+
+def parse_connect_event(message: dict) -> Optional[Version]:
+    """Parses the connect event message from the API and returns the version of the API"""
+    if "meta" in message.keys() and "API-Version" in message["meta"].keys():
+        return Version(message["meta"]["API-Version"])
+    else:
+        log.warning("Did not receive version field from API")
+        return None
