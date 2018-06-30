@@ -29,6 +29,8 @@ class Version(Enum):
     Examples:
         >>> Version.V_20 < Version.V_21
         True
+        >>> Version["V_20"] < Version("v2.1")
+        True
         >>> Version.V_20 >= Version.V_21
         False
     """
