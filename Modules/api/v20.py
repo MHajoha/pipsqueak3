@@ -10,7 +10,7 @@ See LICENSE.md
 """
 from operator import attrgetter
 from datetime import datetime
-from typing import Union, List
+from typing import Union, List, Iterable
 from functools import partial
 
 from uuid import UUID
@@ -125,25 +125,37 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
     async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
         return (await self.get_rats(id=id))[0]
 
-    async def _handle_update(self, data: dict, event: str):
-        """Handle an update from the API."""
-        for rescue_json in data["data"]:
-            rescue = await self._rescue_from_json(rescue_json)
-            if event == "rescueUpdated":
-                if rescue.open:
-                    if rescue in self.board:
-                        self.board.modify(rescue)
-                    else:
-                        self.board.append(rescue)
+    def _rescue_updated(self, rescues: Iterable[Rescue]):
+        for rescue in rescues:
+            if rescue.open:
+                if rescue in self.board:
+                    self.board.modify(rescue)
                 else:
-                    if rescue in self.board:
-                        self.board.remove(rescue)
-            elif event == "rescueCreated":
-                if rescue.open and rescue not in self.board:
                     self.board.append(rescue)
-            elif event == "rescueDeleted":
+            else:
                 if rescue in self.board:
                     self.board.remove(rescue)
+
+    def _rescue_created(self, rescues: Iterable[Rescue]):
+        for rescue in rescues:
+            if rescue.open and rescue not in self.board:
+                self.board.append(rescue)
+
+    def _rescue_deleted(self, rescues: Iterable[Rescue]):
+        for rescue in rescues:
+            if rescue in self.board:
+                self.board.remove(rescue)
+
+    _event_handlers = {
+        "rescueUpdated": _rescue_updated,
+        "rescueCreated": _rescue_created,
+        "rescueDeleted": _rescue_deleted
+    }
+
+    async def _handle_update(self, data: dict, event: str):
+        """Handle an update from the API."""
+        self._event_handlers[event](await self._rescue_from_json(rescue) for rescue in data["data"])
+
 
     @classmethod
     def _quotation_from_json(cls, json: dict) -> Quotation:
