@@ -1,3 +1,4 @@
+import json
 import logging
 import websockets
 
@@ -31,7 +32,7 @@ async def get_correct_version_handler(hostname: str, token: str=None, tls=True) 
     """
     uri = generate_ws_uri(hostname, token=token, tls=tls)
     connection = await websockets.connect(uri)
-    version = parse_connect_event(await connection.recv())
+    version = parse_connect_event(json.loads(await connection.recv()))
 
     if version in _handlers.keys():
         return _handlers[version](hostname, token, tls, connection=connection)
