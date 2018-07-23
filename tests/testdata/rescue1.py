@@ -5,15 +5,17 @@ from typing import NamedTuple
 from uuid import UUID
 
 from Modules.mark_for_deletion import MarkForDeletion
-from Modules.rat import Rat
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
+from tests.testdata import get_rat1
 from utils.ratlib import Platforms
 
 RescueJSONTuple = NamedTuple("RescueJSONTuple", rescue=Rescue, json_rescue=dict)
 
 
 def get_rescue1():
+    rat, json_rat = get_rat1()
+
     with open(os.path.join(os.path.dirname(__file__), "rescue1.json")) as file:
         json_rescue = json.load(file)
 
@@ -28,7 +30,8 @@ def get_rescue1():
             unidentified_rats=["unable_to_use_nickserv[PC]"],
             quotes=[
                 Quotation(
-                    message="RATSIGNAL - CMDR Some Client - System: Alpha Centauri - Platform: PC - O2: OK - Language: English (en-GB) - IRC Nickname: Some_Client",
+                    message="RATSIGNAL - CMDR Some Client - System: Alpha Centauri - Platform: PC - O2: OK - Language: "
+                            "English (en-GB) - IRC Nickname: Some_Client",
                     author="Mecha",
                     created_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123456),
                     updated_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123456),
@@ -43,22 +46,11 @@ def get_rescue1():
                 )
             ],
             title="Operation Go Away",
-            first_limpet=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc"),
+            first_limpet=rat.uuid,
             board_index=9,
             mark_for_deletion=MarkForDeletion(False, None, None),
             lang_id="en",
-            rats=[
-                Rat(
-                    uuid=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc"),
-                    name="Rat1",
-                    platform=Platforms.PC,
-                ),
-                Rat(
-                    uuid=UUID("aa42e51c-5e55-4261-9958-6f1743957d70"),
-                    name="Rat2",
-                    platform=Platforms.PC
-                )
-            ]
+            rats=[rat]
         ),
         json_rescue
     )

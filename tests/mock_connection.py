@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Union
+from typing import Union, List
 from uuid import UUID
 
 from Modules.api.v20 import WebsocketAPIHandler20
@@ -13,7 +13,7 @@ class MockWebsocketConnection(object):
         super().__init__()
         self.sent_messages = []
         self.incoming_messages = []
-        self.response: dict = None
+        self.responses: List[dict] = []
         self.handler = handler_instance
 
         self.host = "some_host"
@@ -24,16 +24,16 @@ class MockWebsocketConnection(object):
             data = json.loads(data)
 
         self.sent_messages.append(data)
-        if self.response:
+        if len(self.responses) > 0:
+            response = self.responses.pop(0)
             try:
-                self.response.setdefault("meta", {})["request_id"] = next(iter(
+                response.setdefault("meta", {})["request_id"] = next(iter(
                     self.handler._waiting_requests
                 ))
             except StopIteration:
-                pass # No waiting requests
+                pass  # No waiting requests
             else:
-                self.incoming_messages.append(self.response)
-                self.response = None
+                self.incoming_messages.append(response)
 
     async def recv(self):
         while len(self.incoming_messages) == 0:

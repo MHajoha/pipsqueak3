@@ -15,7 +15,7 @@ def get_rat1() -> RatJSONTuple:
 
     return RatJSONTuple(
         Rat(
-            uuid=UUID("bede70e3-a695-448a-8376-ecbcf74385b6"),
+            uuid=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc"),
             name="MrRatMan",
             platform=Platforms.PC
         ),

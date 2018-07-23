@@ -44,8 +44,7 @@
   "relationships": {
     "rats": {
       "data": [
-        {"id": "dc9c91fb-9ead-47e9-8771-81da2c1971bc", "type": "rats"},
-        {"id": "aa42e51c-5e55-4261-9958-6f1743957d70", "type": "rats"}
+        {"id": "dc9c91fb-9ead-47e9-8771-81da2c1971bc", "type": "rats"}
       ]
     },
     "firstLimpet": {
