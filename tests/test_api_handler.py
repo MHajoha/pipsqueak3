@@ -8,7 +8,9 @@ from Modules.api.search import Not, In
 from Modules.api.v20 import WebsocketAPIHandler20
 from Modules.api.v21 import WebsocketAPIHandler21
 from Modules.rat_rescue import Rescue
-from Modules.rats import Rats
+from Modules.rat import Rat
+from tests.testdata.rat1 import RatJSONTuple
+from tests.testdata.rescue1 import RescueJSONTuple
 from utils.ratlib import Platforms, Status
 from tests.mock_connection import MockWebsocketConnection
 
@@ -37,12 +39,11 @@ def add_meta(data: Union[dict, list]) -> dict:
 ])
 @pytest.mark.asyncio
 async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
-                           rescue_fx: Tuple[dict, Rescue],
+                           rescue_fx: RescueJSONTuple,
                            criteria: dict, expected_request: dict):
     handler, connection = handler_fx
-    json_rescue, rescue = rescue_fx
 
-    connection.response = add_meta([json_rescue])
+    connection.response = add_meta([rescue_fx.json_rescue])
     result = await handler.get_rescues(**criteria)
 
     assert connection.was_sent({
@@ -51,7 +52,7 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
     })
 
     assert len(result) == 1
-    assert result[0] == rescue
+    assert result[0] == rescue_fx.rescue
 
 
 @pytest.mark.parametrize("criteria,expected_request", [
@@ -60,12 +61,11 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
 ])
 @pytest.mark.asyncio
 async def test_get_rats(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
-                        rats_fx: Tuple[dict, Rats],
+                        rats_fx: RatJSONTuple,
                         criteria: dict, expected_request: dict):
     handler, connection = handler_fx
-    json_rat, rat = rats_fx
 
-    connection.response = add_meta([json_rat])
+    connection.response = add_meta([rats_fx.json_rat])
     result = await handler.get_rats(**criteria)
 
     assert connection.was_sent({
@@ -74,17 +74,16 @@ async def test_get_rats(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketCo
     })
 
     assert len(result) == 1
-    assert result[0] == rat
+    assert result[0] == rats_fx.rat
 
 
 @pytest.mark.asyncio
 async def test_get_rescue_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
-                                rescue_fx: Tuple[dict, Rescue]):
+                                rescue_fx: RescueJSONTuple):
     handler, connection = handler_fx
-    json_rescue, rescue = rescue_fx
 
-    connection.response = add_meta(json_rescue if type(handler) is WebsocketAPIHandler21
-                                   else [json_rescue])
+    connection.response = add_meta(rescue_fx.json_rescue if type(handler) is WebsocketAPIHandler21
+                                   else [rescue_fx.json_rescue])
     result = await handler.get_rescue_by_id(
         UUID("bede70e3-a695-448a-8376-ecbcf74385b6"))
 
@@ -93,17 +92,16 @@ async def test_get_rescue_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWeb
         "id": "bede70e3-a695-448a-8376-ecbcf74385b6"
     })
 
-    assert result == rescue
+    assert result == rescue_fx.rescue
 
 
 @pytest.mark.asyncio
 async def test_get_rat_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
-                             rats_fx: Tuple[dict, Rats]):
+                             rats_fx: RatJSONTuple):
     handler, connection = handler_fx
-    json_rat, rat = rats_fx
 
-    connection.response = add_meta(json_rat if type(handler) is WebsocketAPIHandler21
-                                   else [json_rat])
+    connection.response = add_meta(rats_fx.json_rat if type(handler) is WebsocketAPIHandler21
+                                   else [rats_fx.json_rat])
     result = await handler.get_rat_by_id(
         UUID("bede70e3-a695-448a-8376-ecbcf74385b6"))
 
@@ -112,22 +110,22 @@ async def test_get_rat_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
         "id": "bede70e3-a695-448a-8376-ecbcf74385b6"
     })
 
-    assert result == rat
+    assert result == rats_fx.rat
+
 
 @pytest.mark.asyncio
 async def test_update_rescue(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
-                             rescue_fx: Tuple[dict, Rescue]):
+                             rescue_fx: RescueJSONTuple):
     handler, connection = handler_fx
-    json_rescue, rescue = rescue_fx
 
     connection.response = {"the api handler": "is going to ignore this"}
-    await handler.update_rescue(rescue)
+    await handler.update_rescue(rescue_fx.rescue)
 
-    json_rescue["attributes"].pop("notes")
-    json_rescue["attributes"].pop("outcome")
+    rescue_fx.json_rescue["attributes"].pop("notes")
+    rescue_fx.json_rescue["attributes"].pop("outcome")
 
     assert connection.was_sent({
         "action": ["rescues", "update"],
-        "id": str(rescue.uuid),
-        "data": json_rescue["attributes"]
+        "id": str(rescue_fx.rescue.uuid),
+        "data": rescue_fx.json_rescue["attributes"]
     })

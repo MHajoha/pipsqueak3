@@ -20,7 +20,6 @@ from uuid import uuid4, UUID
 import psycopg2
 import psycopg2.pool
 import websockets
-import datetime
 import pytest
 
 # from psycopg2.pool import SimpleConnectionPool
@@ -43,7 +42,6 @@ setup_logging("logs/unit_tests.log")
 from Modules.permissions import Permission
 from tests.mock_bot import MockBot
 from Modules.rat_board import RatBoard
-from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rat import Rat
 from utils.ratlib import Platforms
@@ -57,6 +55,8 @@ from Modules.fact import Fact
 from tests.mock_connection import MockWebsocketConnection
 from Modules.api.v20 import WebsocketAPIHandler20
 from Modules.api.v21 import WebsocketAPIHandler21
+from Modules.rat_cache import RatCache
+from tests import testdata
 
 
 @pytest.fixture(params=[("pcClient", Platforms.PC, "firestone", 24),
@@ -367,130 +367,60 @@ def rescue_fx():
     This fixture provides a relatively complete rescue in both json format (v2 standard) and as a
     Rescue object.
     """
-    json_rescue = {
-        "id": "bede70e3-a695-448a-8376-ecbcf74385b6",
-        "type": "rescues",
-        "attributes": {
-            "client": "Some Client",
-            "codeRed": False,
-            "data": {
-                "langID": "en",
-                "IRCNick": "Some_Client",
-                "boardIndex": 9,
-                "markedForDeletion": {
-                    "marked": False,
-                    "reason": None,
-                    "reporter": None
-                }
-            },
-            "notes": "Friendly client had run out of fuel in his Farragut Battle Cruiser. DB appreciated.",
-            "platform": "pc",
-            "quotes": [
-                {
-                    "author": "Mecha",
-                    "message": "RATSIGNAL - CMDR Some Client - System: Alpha Centauri - Platform: PC - O2: OK - Language: English (en-GB) - IRC Nickname: Some_Client",
-                    "createdAt": "2018-01-07T22:48:38.123456",
-                    "updatedAt": "2018-01-07T22:48:38.123456",
-                    "lastAuthor": "Mecha"
-                },
-                {
-                    "author": "Mecha",
-                    "message": "[Autodetected system: Alpha Centauri]",
-                    "createdAt": "2018-01-07T22:48:38.123458",
-                    "updatedAt": "2018-01-07T22:48:38.123458",
-                    "lastAuthor": "Mecha"
-                }
-            ],
-            "status": "open",
-            "system": "ALPHA CENTAURI",
-            "title": "Operation Go Away",
-            "outcome": "success",
-            "unidentifiedRats": ["unable_to_use_nickserv[PC]"],
-            "createdAt": "2018-01-07T22:48:38.123000Z",
-            "updatedAt": "2018-01-08T10:34:40.123000Z",
-            "firstLimpetId": "dc9c91fb-9ead-47e9-8771-81da2c1971bc"
-        },
-        "relationships": {
-            "rats": {
-                "data": [
-                    {"id": "dc9c91fb-9ead-47e9-8771-81da2c1971bc", "type": "rats"},
-                    {"id": "aa42e51c-5e55-4261-9958-6f1743957d70", "type": "rats"}
-                ]
-            },
-            "firstLimpet": {
-                "data": {
-                    "id": "dc9c91fb-9ead-47e9-8771-81da2c1971bc",
-                    "type": "rats"
-                }
-            },
-            "epics": {
-                "data": []
-            }
-        }
-    }
-
-    model_rescue = Rescue(
-        UUID("bede70e3-a695-448a-8376-ecbcf74385b6"),
-        client="Some Client",
-        system="ALPHA CENTAURI",
-        irc_nickname="Some_Client",
-        created_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123000),
-        updated_at=datetime.datetime(2018, 1, 8, 10, 34, 40, 123000),
-        unidentified_rats=["unable_to_use_nickserv[PC]"],
-        quotes=[
-            Quotation(
-                message="RATSIGNAL - CMDR Some Client - System: Alpha Centauri - Platform: PC - O2: OK - Language: English (en-GB) - IRC Nickname: Some_Client",
-                author="Mecha",
-                created_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123456),
-                updated_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123456),
-                last_author="Mecha"
-            ),
-            Quotation(
-                message="[Autodetected system: Alpha Centauri]",
-                author="Mecha",
-                created_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123458),
-                updated_at=datetime.datetime(2018, 1, 7, 22, 48, 38, 123458),
-                last_author="Mecha"
-            )
-        ],
-        title="Operation Go Away",
-        first_limpet=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc"),
-        board_index=9,
-        mark_for_deletion=MarkForDeletion(False, None, None),
-        lang_id="en",
-        rats=[
-            Rat(
-                uuid=UUID("dc9c91fb-9ead-47e9-8771-81da2c1971bc"),
-                name="Rat1",
-                platform=Platforms.PC,
-            ),
-            Rat(
-                uuid=UUID("aa42e51c-5e55-4261-9958-6f1743957d70"),
-                name="Rat2",
-                platform=Platforms.PC
-            )
-        ]
-    )
-    model_rescue.platform = Platforms.PC
-
-    return json_rescue, model_rescue
+    return testdata.get_rescue1()
 
 
 @pytest.fixture
 def rats_fx():
-    json_rat = {
-        "id": "bede70e3-a695-448a-8376-ecbcf74385b6",
-        "type": "rats",
-        "attributes": {
-            "name": "MrRatMan",
-            "platform": "pc"
-        }
-    }
+    """
+    This fixture provides a rat both as API v2 JSON and as a :class:`Rat` object.
+    """
+    return testdata.get_rat1()
 
-    model_rat = Rats(
-        uuid=UUID("bede70e3-a695-448a-8376-ecbcf74385b6"),
-        name="MrRatMan",
-        platform=Platforms.PC
-    )
 
-    return json_rat, model_rat
+@pytest.fixture
+def mark_for_deletion_plain_fx() -> MarkForDeletion:
+    """Provides a plain MFD object"""
+    return MarkForDeletion(False)
+
+
+@pytest.fixture(params=[(True, 'White Sheets', 'Disallowable cut of jib'),
+                        (False, 'Shatt', 'Not Enough Cowbell'),
+                        (False, 'unkn0wn', 'Object in mirror appears too close')])
+def mark_for_deletion_fx(request) -> MarkForDeletion:
+    """Provides a parameterized MFD object"""
+    param = request.param
+    return MarkForDeletion(marked=param[0], reporter=param[1], reason=param[2])
+
+
+@pytest.fixture
+def rat_cache_fx():
+    """provides a empty rat_cache"""
+    return RatCache()
+
+
+@pytest.fixture(autouse=True)
+def reset_rat_cache_fx(rat_cache_fx: RatCache):
+    """"cleans up the rat_cache's cache"""
+    # ensure the cache is clean during setup
+    rat_cache_fx.flush()
+    yield
+    # and clean up after ourselves
+    rat_cache_fx.flush()
+
+
+@pytest.fixture
+def permission_fx(monkeypatch) -> Permission:
+    """
+    Provides a permission fixture
+
+    Args:
+        monkeypatch ():
+
+    Returns:
+
+    """
+    # ensure _by_vhost is clean prior to running test
+    monkeypatch.setattr("Modules.permissions._by_vhost", {})
+    permission = Permission(0, {"testing.fuelrats.com", "cheddar.fuelrats.com"})
+    return permission
