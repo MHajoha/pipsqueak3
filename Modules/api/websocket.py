@@ -13,7 +13,7 @@ import json
 import logging
 from abc import abstractmethod
 from json import JSONDecodeError
-from typing import Set, Dict, Any, Union, Optional
+from typing import Set, Dict, Any, Union, Optional, List
 from uuid import UUID, uuid4
 
 import websockets
@@ -132,6 +132,11 @@ class BaseWebsocketAPIHandler(APIHandler, Abstract):
     async def _handle_update(self, data: dict, event: str):
         """Handle an update from the API."""
 
+    @abstractmethod
+    async def _cache_included(self, included: List[dict]):
+        """Consume (most likely cache) objects that were included in an API response."""
+        pass
+
     async def _message_handler(self):
         """
         Handler to be run continuously. Grabs messages from the connection, parses them and assigns
@@ -148,6 +153,9 @@ class BaseWebsocketAPIHandler(APIHandler, Abstract):
             except json.JSONDecodeError:
                 log.error(f"The following message from the API could not be parsed: {message}")
                 continue
+
+            if "included" in data.keys():
+                await self._cache_included(data["included"])
 
             try:
                 request_id = UUID(data["meta"]["request_id"])

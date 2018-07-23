@@ -37,13 +37,14 @@ def add_meta(data: Union[dict, list]) -> dict:
 ])
 @pytest.mark.asyncio
 async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
-                           rescue_fx: RescueJSONTuple, rats_fx: RatJSONTuple,
+                           rescue_fx: RescueJSONTuple,
                            criteria: dict, expected_request: dict):
     handler, connection = handler_fx
 
     connection.responses.append(add_meta([rescue_fx.json_rescue]))
-    connection.responses.append(add_meta(rats_fx.json_rat if type(handler) is WebsocketAPIHandler21
-                                         else [rats_fx.json_rat]))
+    for rat_tuple in rescue_fx.assigned_rats:
+        connection.responses.append(add_meta(rat_tuple if type(handler) is WebsocketAPIHandler21
+                                             else [rat_tuple]))
     result = await handler.get_rescues(**criteria)
 
     assert connection.was_sent({
@@ -51,6 +52,22 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
         **expected_request
     })
 
+    assert len(result) == 1
+    assert result[0] == rescue_fx.rescue
+
+
+@pytest.mark.asyncio
+async def test_included_data(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
+                             rescue_fx: RescueJSONTuple, rats_fx: RatJSONTuple):
+    handler, connection = handler_fx
+
+    connection.responses.append({
+        "included": [rats_fx.json_rat],
+        **add_meta([rescue_fx.json_rescue])
+    })
+    result = await handler.get_rescues(id=rescue_fx.rescue.uuid)
+
+    assert len(connection.sent_messages) == 1  # ensure that no extra request was made to get the rat
     assert len(result) == 1
     assert result[0] == rescue_fx.rescue
 

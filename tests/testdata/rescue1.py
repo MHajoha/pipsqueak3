@@ -1,20 +1,21 @@
 import datetime
 import json
 import os
-from typing import NamedTuple
+from typing import NamedTuple, Sequence
 from uuid import UUID
 
 from Modules.mark_for_deletion import MarkForDeletion
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from tests.testdata import get_rat1
+from tests.testdata.rat1 import RatJSONTuple
 from utils.ratlib import Platforms
 
-RescueJSONTuple = NamedTuple("RescueJSONTuple", rescue=Rescue, json_rescue=dict)
+RescueJSONTuple = NamedTuple("RescueJSONTuple", rescue=Rescue, json_rescue=dict, assigned_rats=Sequence[RatJSONTuple])
 
 
 def get_rescue1():
-    rat, json_rat = get_rat1()
+    rat_tuple = get_rat1()
 
     with open(os.path.join(os.path.dirname(__file__), "rescue1.json")) as file:
         json_rescue = json.load(file)
@@ -46,13 +47,14 @@ def get_rescue1():
                 )
             ],
             title="Operation Go Away",
-            first_limpet=rat.uuid,
+            first_limpet=rat_tuple.rat.uuid,
             board_index=9,
             mark_for_deletion=MarkForDeletion(False, None, None),
             lang_id="en",
-            rats=[rat]
+            rats=[rat_tuple.rat]
         ),
-        json_rescue
+        json_rescue,
+        [rat_tuple]
     )
     result.rescue.platform = Platforms.PC
     return result
