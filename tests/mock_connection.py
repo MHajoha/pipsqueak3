@@ -9,7 +9,7 @@ from Modules.api.v20 import WebsocketAPIHandler20
 class MockWebsocketConnection(object):
     """Fake websocket connection object to be used with the below convenience functions."""
 
-    def __init__(self, handler_instance: WebsocketAPIHandler20):
+    def __init__(self, handler_instance: WebsocketAPIHandler20=None):
         super().__init__()
         self.sent_messages = []
         self.incoming_messages = []
@@ -19,6 +19,8 @@ class MockWebsocketConnection(object):
         self.host = "some_host"
         self.open = True
 
+    loop = property(lambda self: asyncio.get_event_loop())
+
     async def send(self, data: Union[str, dict]):
         if isinstance(data, str):
             data = json.loads(data)
@@ -26,14 +28,14 @@ class MockWebsocketConnection(object):
         self.sent_messages.append(data)
         if len(self.responses) > 0:
             response = self.responses.pop(0)
-            try:
-                response.setdefault("meta", {})["request_id"] = next(iter(
-                    self.handler._waiting_requests
-                ))
-            except StopIteration:
-                pass  # No waiting requests
-            else:
-                self.incoming_messages.append(response)
+            if self.handler is not None:
+                try:
+                    response.setdefault("meta", {})["request_id"] = next(iter(
+                        self.handler._waiting_requests
+                    ))
+                except StopIteration:
+                    pass  # No waiting requests
+            self.incoming_messages.append(response)
 
     async def recv(self):
         while len(self.incoming_messages) == 0:

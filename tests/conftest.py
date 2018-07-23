@@ -362,6 +362,21 @@ async def handler_fx(request):
 
 
 @pytest.fixture
+async def connection_fx():
+    connection = MockWebsocketConnection()
+
+    async def fake_connect(*args, **kwargs):
+        return connection
+
+    original_connect = websockets.connect
+    websockets.connect = fake_connect
+
+    yield connection
+
+    websockets.connect = original_connect
+
+
+@pytest.fixture
 def rescue_fx():
     """
     This fixture provides a relatively complete rescue in both json format (v2 standard) and as a

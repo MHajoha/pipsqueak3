@@ -5,8 +5,10 @@ import datetime
 import pytest
 
 from Modules.api.search import Not, In
+from Modules.api.tools import get_correct_version_handler
 from Modules.api.v20 import WebsocketAPIHandler20
 from Modules.api.v21 import WebsocketAPIHandler21
+from Modules.api.versions import Version
 from tests.testdata.rat1 import RatJSONTuple
 from tests.testdata.rescue1 import RescueJSONTuple
 from utils.ratlib import Platforms, Status
@@ -149,3 +151,18 @@ async def test_update_rescue(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
         "id": str(rescue_fx.rescue.uuid),
         "data": rescue_fx.json_rescue["attributes"]
     })
+
+
+@pytest.mark.parametrize("version", Version)
+@pytest.mark.asyncio
+async def test_get_correct_version_handler(connection_fx: MockWebsocketConnection, version: Version):
+    connection_fx.incoming_messages.append({
+        "meta": {
+            "API-Version": version.value
+        }
+    })
+
+    handler = await get_correct_version_handler("some_hostname")
+
+    assert handler.api_version is version
+    assert handler.connected
