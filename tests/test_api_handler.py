@@ -43,8 +43,8 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
 
     connection.responses.append(add_meta([rescue_fx.json_rescue]))
     for rat_tuple in rescue_fx.assigned_rats:
-        connection.responses.append(add_meta(rat_tuple if type(handler) is WebsocketAPIHandler21
-                                             else [rat_tuple]))
+        connection.responses.append(add_meta(rat_tuple.json_rat if type(handler) is WebsocketAPIHandler21
+                                             else [rat_tuple.json_rat]))
     result = await handler.get_rescues(**criteria)
 
     assert connection.was_sent({
@@ -58,11 +58,11 @@ async def test_get_rescues(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocke
 
 @pytest.mark.asyncio
 async def test_included_data(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
-                             rescue_fx: RescueJSONTuple, rats_fx: RatJSONTuple):
+                             rescue_fx: RescueJSONTuple):
     handler, connection = handler_fx
 
     connection.responses.append({
-        "included": [rats_fx.json_rat],
+        "included": [rat_tuple.json_rat for rat_tuple in rescue_fx.assigned_rats],
         **add_meta([rescue_fx.json_rescue])
     })
     result = await handler.get_rescues(id=rescue_fx.rescue.uuid)
@@ -96,13 +96,14 @@ async def test_get_rats(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketCo
 
 @pytest.mark.asyncio
 async def test_get_rescue_by_id(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
-                                rescue_fx: RescueJSONTuple, rats_fx: RatJSONTuple):
+                                rescue_fx: RescueJSONTuple):
     handler, connection = handler_fx
 
     connection.responses.append(add_meta(rescue_fx.json_rescue if type(handler) is WebsocketAPIHandler21
                                          else [rescue_fx.json_rescue]))
-    connection.responses.append(add_meta(rats_fx.json_rat if type(handler) is WebsocketAPIHandler21
-                                         else [rats_fx.json_rat]))
+    for rat_tuple in rescue_fx.assigned_rats:
+        connection.responses.append(add_meta(rat_tuple.json_rat if type(handler) is WebsocketAPIHandler21
+                                             else [rat_tuple.json_rat]))
     result = await handler.get_rescue_by_id(
         UUID("bede70e3-a695-448a-8376-ecbcf74385b6"))
 
