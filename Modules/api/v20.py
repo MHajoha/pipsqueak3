@@ -168,17 +168,28 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
         for json_obj in included:
             if "type" not in json_obj.keys():
                 log.warning(f"JSON object {json_obj} included in response by API does no have type set.")
-            elif json_obj["type"] == "rescues":
-                rescue = await self._rescue_from_json(json_obj)
-                self._rescue_cache[rescue.uuid] = rescue
-            elif json_obj["type"] == "rats":
+                included.remove(json_obj)
+
+        for json_obj in included:
+            if json_obj["type"] == "rats":
                 rat = self._rat_from_json(json_obj)
                 self._rat_cache[rat.uuid] = rat
-            elif json_obj["type"] == "epics":
+                included.remove(json_obj)
+
+        for json_obj in included:
+            if json_obj["type"] == "rescues":
+                rescue = await self._rescue_from_json(json_obj)
+                self._rescue_cache[rescue.uuid] = rescue
+                included.remove(json_obj)
+
+        for json_obj in included:
+            if json_obj["type"] == "epics":
                 epic = await self._epic_from_json(json_obj)
                 self._epic_cache[epic.uuid] = epic
-            else:
-                log.debug(f"Ignoring included object of type {json_obj['type']}.")
+                included.remove(json_obj)
+
+        for json_obj in included:
+            log.debug(f"Ignoring included object of type {json_obj['type']}.")
 
     def _quotation_from_json(self, json: dict) -> Quotation:
         return Quotation(
