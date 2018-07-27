@@ -62,34 +62,34 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
                                 sanitize=attrgetter("value")),
         self._rescue_search.add("platform", "platform", types=Platforms,
                                 sanitize=lambda platform: None if platform is Platforms.DEFAULT
-                                                          else platform.name.lower())
+                                else platform.name.lower())
 
         self._rat_search = Search()
         self._rat_search.add("id", "id", types=UUID, sanitize=str)
         self._rat_search.add("name", "name", types=str)
         self._rat_search.add("platform", "platform", types=Platforms,
                              sanitize=lambda platform: None if platform is Platforms.DEFAULT
-                                                       else platform.name.lower())
+                             else platform.name.lower())
 
         self._rat_cache: Dict[UUID, Rat] = {}
         self._rescue_cache: Dict[UUID, Rescue] = {}
         self._epic_cache: Dict[UUID, Epic] = {}
 
-    async def update_rescue(self, rescue, full: bool=True):
+    async def update_rescue(self, rescue, full: bool = True) -> Rescue:
         if rescue.uuid is None:
             raise ValueError("Cannot send rescue without ID to the API")
         else:
-            await self._request({"action": ("rescues", "update"),
-                                 "id": str(rescue.uuid),
-                                 "data": self._rescue_to_json(rescue)})
+            response = await self._request({"action": ("rescues", "update"),
+                                            "id": str(rescue.uuid),
+                                            "data": self._rescue_to_json(rescue)})
+            return await self._rescue_from_json(response["data"][0])
 
-    async def create_rescue(self, rescue: Rescue) -> UUID:
-
+    async def create_rescue(self, rescue: Rescue) -> Rescue:
         if rescue.uuid is None:
             response = await self._request({"action": ("rescues", "create"),
                                             "data": self._rescue_to_json(rescue)})
             rescue.uuid = UUID(response["data"]["id"])
-            return UUID(response["data"]["id"])
+            return await self._rescue_from_json(response["data"])
         else:
             raise ValueError("cannot send rescue which already has api id set")
 
@@ -215,8 +215,8 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
 
     async def _epic_from_json(self, json: dict) -> Epic:
         rescue_id = UUID(json["attributes"]["rescueId"], version=4)
-        rescue = self._rescue_cache[rescue_id] if rescue_id in self._rescue_cache.keys()\
-                 else self.get_rescue_by_id(rescue_id)
+        rescue = self._rescue_cache[rescue_id] if rescue_id in self._rescue_cache.keys() \
+            else self.get_rescue_by_id(rescue_id)
 
         rat_id = UUID(json["attributes"]["ratId"], version=4)
         rat = self._rat_cache[rat_id] if rat_id in self._rat_cache.keys() else await RatCache().get_rat_by_uuid(rat_id)
@@ -286,7 +286,7 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
             "codeRed": rescue.code_red,
             "firstLimpetId": str(rescue.first_limpet),
             "platform": None if rescue.platform is Platforms.DEFAULT
-                        else rescue.platform.name.lower(),
+            else rescue.platform.name.lower(),
             "data": {
                 "IRCNick": rescue.irc_nickname,
                 "langID": rescue.lang_id.lower(),
@@ -303,7 +303,7 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
             uuid=UUID(json["id"], version=4),
             name=json["attributes"]["name"],
             platform=Platforms.DEFAULT if json["attributes"]["platform"] is None
-                     else Platforms[json["attributes"]["platform"].upper()]
+            else Platforms[json["attributes"]["platform"].upper()]
         )
         self._rat_cache[result.uuid] = result
         return result

@@ -140,8 +140,12 @@ async def test_update_rescue(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
                              rescue_fx: RescueJSONTuple):
     handler, connection = handler_fx
 
-    connection.responses.append({"the api handler": "is going to ignore this"})
-    await handler.update_rescue(rescue_fx.rescue)
+    connection.responses.append(add_meta([rescue_fx.json_rescue]))
+    for rat_tuple in rescue_fx.assigned_rats:
+        connection.responses.append(add_meta(rat_tuple.json_rat if type(handler) is WebsocketAPIHandler21
+                                             else [rat_tuple.json_rat]))
+
+    new_rescue = await handler.update_rescue(rescue_fx.rescue)
 
     rescue_fx.json_rescue["attributes"].pop("notes")
     rescue_fx.json_rescue["attributes"].pop("outcome")
@@ -152,19 +156,25 @@ async def test_update_rescue(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
         "data": rescue_fx.json_rescue["attributes"]
     })
 
+    assert new_rescue == rescue_fx.rescue
+
 
 @pytest.mark.asyncio
 async def test_create_rescue(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
                              rescue_fx: RescueJSONTuple):
     handler, connection = handler_fx
+    id = rescue_fx.rescue.uuid
     rescue_fx.rescue._id = None
 
     connection.responses.append(add_meta(rescue_fx.json_rescue))
-    uuid = await handler.create_rescue(rescue_fx.rescue)
+    for rat_tuple in rescue_fx.assigned_rats:
+        connection.responses.append(add_meta(rat_tuple.json_rat if type(handler) is WebsocketAPIHandler21
+                                             else [rat_tuple.json_rat]))
 
-    assert isinstance(uuid, UUID)
-    assert isinstance(rescue_fx.rescue.uuid, UUID)
-    assert uuid == rescue_fx.rescue.uuid
+    new_rescue = await handler.create_rescue(rescue_fx.rescue)
+
+    assert new_rescue.uuid == id == rescue_fx.rescue.uuid
+    assert new_rescue == rescue_fx.rescue
 
 
 @pytest.mark.parametrize("version", Version)
