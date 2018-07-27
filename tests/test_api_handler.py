@@ -153,6 +153,20 @@ async def test_update_rescue(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsoc
     })
 
 
+@pytest.mark.asyncio
+async def test_create_rescue(handler_fx: Tuple[WebsocketAPIHandler20, MockWebsocketConnection],
+                             rescue_fx: RescueJSONTuple):
+    handler, connection = handler_fx
+    rescue_fx.rescue._id = None
+
+    connection.responses.append(add_meta(rescue_fx.json_rescue))
+    uuid = await handler.create_rescue(rescue_fx.rescue)
+
+    assert isinstance(uuid, UUID)
+    assert isinstance(rescue_fx.rescue.uuid, UUID)
+    assert uuid == rescue_fx.rescue.uuid
+
+
 @pytest.mark.parametrize("version", Version)
 @pytest.mark.asyncio
 async def test_get_correct_version_handler(connection_fx: MockWebsocketConnection, version: Version):

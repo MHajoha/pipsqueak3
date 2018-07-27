@@ -88,8 +88,8 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
         if rescue.uuid is None:
             response = await self._request({"action": ("rescues", "create"),
                                             "data": self._rescue_to_json(rescue)})
-            # rescue.case_id = UUID(response["data"][0]["id"])
-            return UUID(response["data"][0]["id"])
+            rescue.uuid = UUID(response["data"]["id"])
+            return UUID(response["data"]["id"])
         else:
             raise ValueError("cannot send rescue which already has api id set")
 
