@@ -19,7 +19,7 @@ from Modules.mark_for_deletion import MarkForDeletion
 from Modules.rat_board import RatBoard
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
-from Modules.rats import Rats
+from Modules.rat import Rat
 from utils.abstract import Abstract
 from utils.ratlib import Status, Outcome, Platforms
 
@@ -121,7 +121,7 @@ class APIHandler(Abstract):
                                         SequelizeOperator[Iterable[Quotation]]]=_UNSET,
                           title: Union[str, SequelizeOperator[Optional[str]], None]=_UNSET,
                           code_red: Union[bool, SequelizeOperator[bool]]=_UNSET,
-                          first_limpet: Union[Rats, SequelizeOperator[Rats]]=_UNSET,
+                          first_limpet: Union[Rat, SequelizeOperator[Rat]]=_UNSET,
                           marked_for_deletion: Union[MarkForDeletion,
                                                      SequelizeOperator[MarkForDeletion]]=_UNSET,
                           irc_nickname: Union[str, SequelizeOperator[str]]=_UNSET,
@@ -148,7 +148,7 @@ class APIHandler(Abstract):
             quotes (list of Quotation)
             title (str)
             code_red (bool)
-            first_limpet (Rats)
+            first_limpet (Rat)
             marked_for_deletion (MarkForDeletion)
             irc_nickname (str)
             lang_id (str)
@@ -172,7 +172,7 @@ class APIHandler(Abstract):
     async def get_rats(self, *,
                        id: Union[UUID, SequelizeOperator[UUID]],
                        name: Union[str, SequelizeOperator[str]],
-                       platform: Union[Platforms, SequelizeOperator[Platforms]]) -> List[Rats]:
+                       platform: Union[Platforms, SequelizeOperator[Platforms]]) -> List[Rat]:
         """
         Get all rats from the API matching the criteria provided.
 
@@ -181,7 +181,7 @@ class APIHandler(Abstract):
         """
 
     @abstractmethod
-    async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
+    async def get_rat_by_id(self, id: Union[str, UUID]) -> Rat:
         """
         Get rat with the provided ID.
 

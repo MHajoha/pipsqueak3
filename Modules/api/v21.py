@@ -15,7 +15,7 @@ from uuid import UUID
 from Modules.api.v20 import WebsocketAPIHandler20
 from Modules.api.versions import Version
 from Modules.rat_rescue import Rescue
-from Modules.rats import Rats
+from Modules.rat import Rat
 
 
 class WebsocketAPIHandler21(WebsocketAPIHandler20):
@@ -43,7 +43,7 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
 
         return await self._rescue_from_json(response["data"])
 
-    async def get_rats(self, **criteria) -> List[Rats]:
+    async def get_rats(self, **criteria) -> List[Rat]:
         data = self._rat_search.generate(criteria)
         data["action"] = ("rats", "search")
 
@@ -55,7 +55,7 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
 
         return results
 
-    async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
+    async def get_rat_by_id(self, id: Union[str, UUID]) -> Rat:
         response = await self._request({
             "action": ("rats", "read"),
             "id": str(id)

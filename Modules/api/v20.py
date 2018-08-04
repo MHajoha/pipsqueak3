@@ -53,7 +53,7 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
                                                          for quote in list(quotes)])
         self._rescue_search.add("title", "title", types=str, nullable=True)
         self._rescue_search.add("code_red", "codeRed", bool)
-        self._rescue_search.add("first_limpet", "firstLimpetId", types=(Rats, UUID), nullable=True,
+        self._rescue_search.add("first_limpet", "firstLimpetId", types=(Rat, UUID), nullable=True,
                                 sanitize=lambda fl: str(fl if isinstance(fl, UUID) else fl.uuid))
         self._rescue_search.add("marked_for_deletion", "data.markedForDeletion.marked", types=bool)
         self._rescue_search.add("irc_nickname", "IRCNick", types=str)
@@ -61,15 +61,15 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
         self._rescue_search.add("outcome", "outcome", types=Outcome,
                                 sanitize=attrgetter("value")),
         self._rescue_search.add("platform", "platform", types=Platforms,
-                                sanitize=lambda platform: None if platform is Platforms.DEFAULT
-                                else platform.name.lower())
+                                sanitize=lambda platform: None if platform is None
+                                else platform.value.lower())
 
         self._rat_search = Search()
         self._rat_search.add("id", "id", types=UUID, sanitize=str)
         self._rat_search.add("name", "name", types=str)
         self._rat_search.add("platform", "platform", types=Platforms,
-                             sanitize=lambda platform: None if platform is Platforms.DEFAULT
-                             else platform.name.lower())
+                             sanitize=lambda platform: None if platform is None
+                             else platform.value.lower())
 
         self._rat_cache: Dict[UUID, Rat] = {}
         self._rescue_cache: Dict[UUID, Rescue] = {}
@@ -118,7 +118,7 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
     async def get_rescue_by_id(self, id: Union[str, UUID]) -> Rescue:
         return (await self.get_rescues(id=id))[0]
 
-    async def get_rats(self, **criteria) -> List[Rats]:
+    async def get_rats(self, **criteria) -> List[Rat]:
         data = self._rat_search.generate(criteria)
         data["action"] = ("rats", "read")
 
@@ -130,7 +130,7 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
 
         return results
 
-    async def get_rat_by_id(self, id: Union[str, UUID]) -> Rats:
+    async def get_rat_by_id(self, id: Union[str, UUID]) -> Rat:
         return (await self.get_rats(id=id))[0]
 
     def _rescue_updated(self, rescues: Iterable[Rescue]):
@@ -296,8 +296,8 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
             "title": rescue.title,
             "codeRed": rescue.code_red,
             "firstLimpetId": str(rescue.first_limpet),
-            "platform": None if rescue.platform is Platforms.DEFAULT
-            else rescue.platform.name.lower(),
+            "platform": None if rescue.platform is None
+            else rescue.platform.value.lower(),
             "data": {
                 "IRCNick": rescue.irc_nickname,
                 "langID": rescue.lang_id.lower(),
@@ -313,8 +313,8 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
         result = Rat(
             uuid=UUID(json["id"], version=4),
             name=json["attributes"]["name"],
-            platform=Platforms.DEFAULT if json["attributes"]["platform"] is None
-            else Platforms[json["attributes"]["platform"].upper()]
+            platform=None if json["attributes"]["platform"] is None
+            else Platforms(json["attributes"]["platform"].upper())
         )
         self._rat_cache[result.uuid] = result
         return result
