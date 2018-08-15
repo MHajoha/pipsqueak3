@@ -73,8 +73,11 @@ class BaseWebsocketAPIHandler(APIHandler, Abstract):
 
         self._connection: websockets.WebSocketClientProtocol = connection
 
-        self._listener_task: asyncio.Task = None
-        """See :meth:`self._message_handler`"""
+        if connection:
+            self._listener_task: asyncio.Task = self._loop.create_task(self._message_handler())
+        else:
+            self._listener_task: asyncio.Task = None
+
         self._waiting_requests: Set[UUID] = set()
         """Holds UUIDs of requests currently waiting for a response."""
         self._request_responses: Dict[UUID, Dict[str, Any]] = {}

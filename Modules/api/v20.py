@@ -192,10 +192,15 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
             log.debug(f"Ignoring included object of type {json_obj['type']}.")
 
     def _quotation_from_json(self, json: dict) -> Quotation:
+        if json["createdAt"].endswith("Z"):
+            fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
+        else:
+            fmt = "%Y-%m-%dT%H:%M:%S.%f"
+
         return Quotation(
             message=json["message"],
-            created_at=datetime.strptime(json["createdAt"], "%Y-%m-%dT%H:%M:%S.%f"),
-            updated_at=datetime.strptime(json["updatedAt"], "%Y-%m-%dT%H:%M:%S.%f"),
+            created_at=datetime.strptime(json["createdAt"], fmt),
+            updated_at=datetime.strptime(json["updatedAt"], fmt),
             author=json["author"],
             last_author=json["lastAuthor"]
         )
@@ -255,7 +260,6 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
             title=json["attributes"]["title"],
             status=Status[json["attributes"]["status"].upper()],
             code_red=json["attributes"]["codeRed"],
-            first_limpet=UUID(json["attributes"]["firstLimpetId"], version=4),
             board_index=json["attributes"].get("data", {}).get("boardIndex", None),
             mark_for_deletion=self._mfd_from_json(json["attributes"].get("data", {})
                                                   .get("markedForDeletion", {})),
@@ -267,6 +271,9 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
             result.platform = Platforms[json["attributes"]["platform"].upper()]
 
         self._rescue_cache[result.uuid] = result
+
+        if json["attributes"]["firstLimpetId"] is not None:
+            result.first_limpet = UUID(json["attributes"]["firstLimpetId"], version=4)
 
         for json_rat in json["relationships"]["rats"]["data"]:
             rat_id = UUID(json_rat["id"], version=4)
@@ -290,12 +297,12 @@ class WebsocketAPIHandler20(BaseWebsocketAPIHandler):
             "system": rescue.system,
             "status": rescue.status.name.lower(),
             "unidentifiedRats": rescue.unidentified_rats,
-            "createdAt": rescue.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            "updatedAt": rescue.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            # "createdAt": rescue.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            # "updatedAt": rescue.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             "quotes": list(map(self._quotation_to_json, rescue.quotes)),
             "title": rescue.title,
             "codeRed": rescue.code_red,
-            "firstLimpetId": str(rescue.first_limpet),
+            "firstLimpetId": None if rescue.first_limpet is None else str(rescue.first_limpet),
             "platform": None if rescue.platform is None
             else rescue.platform.value.lower(),
             "data": {

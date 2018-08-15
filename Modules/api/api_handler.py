@@ -170,9 +170,10 @@ class APIHandler(Abstract):
 
     @abstractmethod
     async def get_rats(self, *,
-                       id: Union[UUID, SequelizeOperator[UUID]],
-                       name: Union[str, SequelizeOperator[str]],
-                       platform: Union[Platforms, SequelizeOperator[Platforms]]) -> List[Rat]:
+                       id: Union[UUID, SequelizeOperator[UUID]]=_UNSET,
+                       name: Union[str, SequelizeOperator[str]]=_UNSET,
+                       platform: Union[Platforms, SequelizeOperator[Platforms]]=_UNSET
+                       ) -> List[Rat]:
         """
         Get all rats from the API matching the criteria provided.
 
