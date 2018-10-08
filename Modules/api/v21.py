@@ -8,6 +8,7 @@ Licensed under the BSD 3-Clause License.
 
 See LICENSE.md
 """
+import logging
 from typing import Union, List
 
 from uuid import UUID
@@ -16,6 +17,10 @@ from Modules.api.v20 import WebsocketAPIHandler20
 from Modules.api.versions import Version
 from Modules.rat_rescue import Rescue
 from Modules.rat import Rat
+from config import config
+from utils.typechecking import check_type
+
+log = logging.getLogger(f"{config['logging']['base_logger']}.{__name__}")
 
 
 class WebsocketAPIHandler21(WebsocketAPIHandler20):
@@ -40,8 +45,11 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
             "action": ("rescues", "read"),
             "id": str(id)
         })
+        check_type(response["data"], list)
+        if len(response["data"]) != 1:
+            log.error(f"Expected API to return exactly one rescue, got {len(response)}.")
 
-        return await self._rescue_from_json(response["data"])
+        return await self._rescue_from_json(response["data"][0])
 
     async def get_rats(self, **criteria) -> List[Rat]:
         data = self._rat_search.generate(criteria)
@@ -60,5 +68,8 @@ class WebsocketAPIHandler21(WebsocketAPIHandler20):
             "action": ("rats", "read"),
             "id": str(id)
         })
+        check_type(response["data"], list)
+        if len(response["data"]) != 1:
+            log.error(f"Expected API to return exactly one rat, got {len(response)}.")
 
-        return self._rat_from_json(response["data"])
+        return self._rat_from_json(response["data"][0])
