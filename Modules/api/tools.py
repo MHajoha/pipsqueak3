@@ -3,7 +3,6 @@ import logging
 import websockets
 
 from Modules.api.api_handler import APIHandler
-from Modules.api.v20 import WebsocketAPIHandler20
 from Modules.api.v21 import WebsocketAPIHandler21
 from Modules.api.versions import Version
 from Modules.api.websocket import generate_ws_uri, parse_connect_event
@@ -12,7 +11,6 @@ from config import config
 log = logging.getLogger(f"{config['logging']['base_logger']}.{__name__}")
 
 _handlers = {
-    Version.V_20: WebsocketAPIHandler20,
     Version.V_21: WebsocketAPIHandler21
 }
 

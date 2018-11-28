@@ -53,7 +53,6 @@ from tests.mock_callables import CallableMock, AsyncCallableMock
 from database import DatabaseManager
 from Modules.fact import Fact
 from tests.mock_connection import MockWebsocketConnection
-from Modules.api.v20 import WebsocketAPIHandler20
 from Modules.api.v21 import WebsocketAPIHandler21
 from Modules.rat_cache import RatCache
 from tests import testdata
@@ -325,7 +324,7 @@ def test_fact_fx() -> Fact:
                 )
 
 
-@pytest.fixture(params=[WebsocketAPIHandler20, WebsocketAPIHandler21], ids=["v2.0", "v2.1"])
+@pytest.fixture(params=[WebsocketAPIHandler21])
 async def handler_fx(request):
     """
     Fixture for API handler tests.

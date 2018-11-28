@@ -3,13 +3,13 @@ import json
 from typing import Union, List
 from uuid import UUID
 
-from Modules.api.v20 import WebsocketAPIHandler20
+from Modules.api.websocket import BaseWebsocketAPIHandler
 
 
 class MockWebsocketConnection(object):
     """Fake websocket connection object to be used with the below convenience functions."""
 
-    def __init__(self, handler_instance: WebsocketAPIHandler20=None):
+    def __init__(self, handler_instance: BaseWebsocketAPIHandler=None):
         super().__init__()
         self.sent_messages = []
         self.incoming_messages = []
