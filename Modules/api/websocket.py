@@ -21,14 +21,13 @@ import websockets
 from Modules.api.api_handler import APIHandler
 from Modules.api.versions import Version
 from config import config
-from utils.abstract import Abstract
 from .exceptions import NotConnectedError, MismatchedVersionError, APIError, UnauthorizedError, \
     ForbiddenError, InternalAPIError
 
 log = logging.getLogger(f"{config['logging']['base_logger']}.{__name__}")
 
 
-class BaseWebsocketAPIHandler(APIHandler, Abstract):
+class BaseWebsocketAPIHandler(APIHandler):
     """
     Base class for API Handlers.
     Defines methods for requests and all that rubbish.
@@ -52,6 +51,8 @@ class BaseWebsocketAPIHandler(APIHandler, Abstract):
             ValueError: When both *loop* and *connection* are provided but *connection* is not
                 running in *loop*.
         """
+        super().__init__(hostname, token, tls)
+
         self._hostname = hostname
         self._token = token
         self._tls = tls

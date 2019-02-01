@@ -11,13 +11,14 @@ See LICENSE.md
 from abc import abstractmethod
 from typing import Callable, Dict, Tuple, Any, Union, Sequence, Generic, TypeVar
 
-from utils.abstract import Abstract
 from utils.nested import set_nested
 from utils.typechecking import check_type
 
 
 T = TypeVar("T")
-class SequelizeOperator(Abstract, Generic[T]):
+
+
+class SequelizeOperator(Generic[T]):
     @abstractmethod
     def generate(self, sanitize: Callable=None) -> Union[dict, list]:
         pass

@@ -10,7 +10,7 @@ See LICENSE.md
 """
 from datetime import datetime
 from typing import Union, List, Optional, Iterable
-from abc import abstractmethod, abstractproperty
+from abc import abstractmethod, abstractproperty, ABC
 from uuid import UUID
 
 from Modules.api.search import SequelizeOperator
@@ -20,13 +20,13 @@ from Modules.rat_board import RatBoard
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rat import Rat
-from utils.abstract import Abstract
 from utils.ratlib import Status, Outcome, Platforms
 
 
 _UNSET = object()
 
-class APIHandler(Abstract):
+
+class APIHandler(ABC):
     """Defines the public interface of an API handler."""
     api_version: Version = abstractproperty()
     board: RatBoard = None
