@@ -82,7 +82,7 @@ async def test_parametrize_too_few_args(async_callable_fx: AsyncCallableMock, bo
 @pytest.mark.asyncio
 async def test_optional_parameter(async_callable_fx: AsyncCallableMock, bot_fx):
     """Test that optional parameters are handled correctly."""
-    decorated = parametrize("ww?", "some_usage")(async_callable_fx)
+    decorated = parametrize(WordParam(), WordParam(optional=True))(async_callable_fx)
     decorated = command("cmd")(decorated)
 
     context = await Context.from_message(bot_fx, "#channel", "unit_test", "!cmd arg")
