@@ -1,18 +1,65 @@
+from abc import ABC, abstractproperty, abstractmethod
 from asyncio import iscoroutine
+from enum import Enum, auto
 from functools import wraps
-from itertools import zip_longest
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Iterator, Tuple, Any, List
+from uuid import UUID
 
 from Modules.rat import Rat
+from Modules.rat_cache import RatCache
 from Modules.rat_rescue import Rescue
 from config import config
 from Modules.context import Context
 from Modules.rat_command import log
 
 
-class _BaseParam(object):
-    """Base class for parameters. Do not use directly."""
-    _usage_name = None
+class _EvaluationResult(Enum):
+    CONTINUE = auto()
+    DONE = auto()
+    CANCEL = auto()
+
+
+class _ArgumentProvider(Iterator[Tuple[str, str]]):
+    def __init__(self, context: Context):
+        self._context = context
+        self._index = 1
+        self._is_at_end = False
+
+    @property
+    def context(self) -> Context:
+        return self._context
+
+    @property
+    def is_at_end(self) -> bool:
+        return self._is_at_end
+
+    def next_arg(self) -> str:
+        if self.is_at_end:
+            raise ValueError("no arguments are left")
+        else:
+            result = self.context.words[self._index]
+            self._index += 1
+            if self._index >= len(self.context.words):
+                self._is_at_end = True
+            return result
+
+    def next_arg_eol(self) -> str:
+        if self.is_at_end:
+            raise ValueError("no arguments are left")
+        else:
+            self._is_at_end = True
+            return self.context.words_eol[self._index]
+
+    def __next__(self) -> str:
+        if self.is_at_end:
+            raise StopIteration
+        else:
+            return self.next_arg()
+
+
+class _AbstractParam(ABC):
+    """Abstract base class for parameters."""
+    _usage_name = abstractproperty()
 
     def __init__(self, optional: bool = False):
         """
@@ -25,6 +72,9 @@ class _BaseParam(object):
         """
         self.optional = optional
 
+    @abstractmethod
+    async def evaluate(self, state: _ArgumentProvider, target_args: List[Any]) -> _EvaluationResult: ...
+
     def __str__(self):
         """Create a user-friendly representation of the parameter for use in usage strings."""
         return f"[{self._usage_name}]" if self.optional else f"<{self._usage_name}>"
@@ -34,7 +84,7 @@ class _BaseParam(object):
         return type(self).__name__ + ("(optional)" if self.optional else "()")
 
 
-class RescueParam(_BaseParam):
+class RescueParam(_AbstractParam):
     """
     Supplies the command function with an instance of :class:`Rescue`.
 
@@ -81,7 +131,7 @@ class RescueParam(_BaseParam):
         return result
 
 
-class RatParam(_BaseParam):
+class RatParam(_AbstractParam):
     """
     Supplies the command function with an instance of :class:`Rats` found in the rat cache.
 
@@ -89,23 +139,63 @@ class RatParam(_BaseParam):
     """
     _usage_name = "rat"
 
+    async def evaluate(self, state: _ArgumentProvider, target_args: List[Any]) -> _EvaluationResult:
+        arg = state.next_arg()
+        if arg.startswith("@"):
+            try:
+                uuid = UUID(arg[1:])
+            except ValueError:
+                log.warn(f"Argument for rat starts with @, but was not a valid "
+                         f"UUID: {arg}")
+            except IndexError:
+                log.warn(f"Argument for rat is a sole @")
+            else:
+                found_rat = await RatCache().get_rat_by_uuid(uuid)
+                if found_rat is None:
+                    log.info(f"Could not find a rat with UUID {uuid}")
+                    await state.context.reply(
+                        f"{state.context.user.nickname}: Could not find rat with ID {uuid}!")
+                    return _EvaluationResult.CANCEL
+                else:
+                    target_args.append(found_rat)
+                    return _EvaluationResult.CONTINUE
 
-class WordParam(_BaseParam):
+        found_rat = await RatCache().get_rat_by_name(arg)
+        if found_rat is None:
+            log.info(f"Could not find a rat with name {arg}")
+            await state.context.reply(
+                f"{state.context.user.nickname}: Could not find rat '{arg}'!")
+            return _EvaluationResult.CANCEL
+        else:
+            target_args.append(found_rat)
+            return _EvaluationResult.CONTINUE
+
+
+class WordParam(_AbstractParam):
     """
     Simply forwards the raw argument to the underlying command function.
     """
     _usage_name = "word"
 
+    async def evaluate(self, state: _ArgumentProvider, target_args: List[Any]):
+        target_args.append(state.next_arg())
+        return _EvaluationResult.CONTINUE
 
-class TextParam(_BaseParam):
+
+class TextParam(_AbstractParam):
     """
     Supplies the command function with the raw argument in question and also everything up to the
     end of the line in a single string argument.
+    This Parameter is terminal. No other parameters must follow it.
     """
     _usage_name = "text"
 
+    async def evaluate(self, state: _ArgumentProvider, target_args: List[Any]):
+        target_args.append(state.next_arg_eol())
+        return _EvaluationResult.DONE
 
-def parametrize(*params: _BaseParam, usage: str = None):
+
+def parametrize(*params: _AbstractParam, usage: str = None):
     """
     Provides underlying command coroutine with predictable and easy-to-use arguments.
 
@@ -130,48 +220,40 @@ def parametrize(*params: _BaseParam, usage: str = None):
     def decorator(fun: Callable):
         @wraps(fun)
         async def wrapper(context: Context, *args):
-            args: list = [context, *args]
+            state = _ArgumentProvider(context)
+            target_args = [context, *args]
 
-            if len(params) > 0:
-                for param, arg, arg_eol in zip_longest(params, context.words[1:],
-                                                       context.words_eol[1:]):
-                    if param is Rescue or param is RescueParam:
-                        param = RescueParam()
-                    elif param is Rat or param is RatParam:
-                        param = RatParam()
-                    elif param is None:
-                        if isinstance(params[-1], TextParam):
-                            log.debug("Disregarding extra arguments as last parameter was text.")
-                            continue
-                        else:
-                            log.debug(f"Command {context.words[0]} called with too many arguments.")
-                            await _reply_usage(context, usage)
-                            return
+            for param in params:
+                if param is Rescue or param is RescueParam:
+                    param = RescueParam()
+                elif param is Rat or param is RatParam:
+                    param = RatParam()
 
-                    if arg is None:
-                        # no more arguments provided
-                        if param.optional:
-                            args.append(None)
-                            continue
-                        else:
-                            log.debug(f"Mandatory parameter {repr(param)} was omitted in "
-                                      f"{context.words[0]}.")
-                            await _reply_usage(context, usage)
-                            return
-
-                    if isinstance(param, RescueParam):
-                        # waiting on the rescue board for this
-                        raise NotImplementedError("Rescue parameters are not implemented yet")
-                    elif isinstance(param, RatParam):
-                        raise NotImplementedError("Rat parameters are not implemented yet")
-                    elif isinstance(param, WordParam):
-                        args.append(arg)
-                    elif isinstance(param, TextParam):
-                        args.append(arg_eol)
+                if state.is_at_end:
+                    # no more arguments provided
+                    if param.optional:
+                        target_args.append(None)
+                        continue
                     else:
-                        raise ValueError(f"unrecognized command parameter '{repr(param)}'")
+                        log.debug(f"Mandatory parameter {repr(param)} was omitted in "
+                                  f"{context.words[0]}.")
+                        await _reply_usage(context, usage)
+                        return
 
-            result = fun(*args)
+                evaluation_result = await param.evaluate(state, target_args)
+                if evaluation_result is _EvaluationResult.CONTINUE:
+                    continue
+                elif evaluation_result is _EvaluationResult.DONE:
+                    break
+                else:
+                    return
+
+            if not state.is_at_end:
+                log.debug(f"Command {context.words[0]} called with too many arguments.")
+                await _reply_usage(context, usage)
+                return
+
+            result = fun(*target_args)
             if iscoroutine(result):
                 return await result
             else:
@@ -182,7 +264,7 @@ def parametrize(*params: _BaseParam, usage: str = None):
     return decorator
 
 
-def _generate_usage(params: Iterable[_BaseParam]) -> str:
+def _generate_usage(params: Iterable[_AbstractParam]) -> str:
     result = ""
     for param in params:
         result += param
