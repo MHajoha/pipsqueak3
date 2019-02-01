@@ -1,4 +1,4 @@
-from asyncio import iscoroutinefunction
+from asyncio import iscoroutine
 from functools import wraps
 from itertools import zip_longest
 from typing import Iterable, Callable
@@ -169,10 +169,11 @@ def parametrize(*params: _BaseParam, usage: str=None):
                     else:
                         raise ValueError(f"unrecognized command parameter '{repr(param)}'")
 
-            if iscoroutinefunction(fun):
-                return await fun(*args)
+            result = fun(*args)
+            if iscoroutine(result):
+                return await result
             else:
-                return fun(*args)
+                return result
         return wrapper
     return decorator
 
