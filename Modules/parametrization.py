@@ -14,7 +14,7 @@ class _BaseParam(object):
     """Base class for parameters. Do not use directly."""
     _usage_name = None
 
-    def __init__(self, optional: bool=False):
+    def __init__(self, optional: bool = False):
         """
         Initializes a new parameter.
 
@@ -45,8 +45,9 @@ class RescueParam(_BaseParam):
     """
     _usage_name = "case"
 
-    def __init__(self, *, create: bool=False, include_creation: bool=False, closed: bool=False,
-                 optional: bool=False):
+    def __init__(self, *, create: bool = False, include_creation: bool = False,
+                 closed: bool = False,
+                 optional: bool = False):
         """
         Initializes a new rescue parameter.
 
@@ -104,7 +105,7 @@ class TextParam(_BaseParam):
     _usage_name = "text"
 
 
-def parametrize(*params: _BaseParam, usage: str=None):
+def parametrize(*params: _BaseParam, usage: str = None):
     """
     Provides underlying command coroutine with predictable and easy-to-use arguments.
 
@@ -125,6 +126,7 @@ def parametrize(*params: _BaseParam, usage: str=None):
         ... async def some_command(context, rescue1, rescue2_or_none_if_not_provided):
         ...     pass
     """
+
     def decorator(fun: Callable):
         @wraps(fun)
         async def wrapper(context: Context, *args):
@@ -174,7 +176,9 @@ def parametrize(*params: _BaseParam, usage: str=None):
                 return await result
             else:
                 return result
+
         return wrapper
+
     return decorator
 
 
