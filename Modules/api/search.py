@@ -14,13 +14,12 @@ from typing import Callable, Dict, Tuple, Any, Union, Sequence, Generic, TypeVar
 from utils.nested import set_nested
 from utils.typechecking import check_type
 
-
 T = TypeVar("T")
 
 
 class SequelizeOperator(Generic[T]):
     @abstractmethod
-    def generate(self, sanitize: Callable=None) -> Union[dict, list]:
+    def generate(self, sanitize: Callable = None) -> Union[dict, list]:
         pass
 
 
@@ -30,7 +29,7 @@ class _UnaryOp(SequelizeOperator[T], Generic[T]):
     def __init__(self, value: T):
         self._value: T = value
 
-    def generate(self, sanitize: Callable=None) -> dict:
+    def generate(self, sanitize: Callable = None) -> dict:
         if sanitize is None or self._value is None:
             return {self._op: self._value}
         else:
@@ -51,7 +50,7 @@ class _SequenceOperator(SequelizeOperator[T], Generic[T]):
     def __init__(self, *values: T):
         self._values: Tuple[T] = values
 
-    def generate(self, sanitize: Callable=None) -> dict:
+    def generate(self, sanitize: Callable = None) -> dict:
         if sanitize is None:
             return {self._op: list(self._values)}
         else:
@@ -72,8 +71,8 @@ class Search(object):
         self._criteria: Dict[str, Tuple[str, Tuple[type], Callable]] = {}
 
     def add(self, criterion: str, json_key: str,
-            types: Union[type, Sequence[type]]=None,
-            sanitize: Callable=None, nullable: bool=False):
+            types: Union[type, Sequence[type]] = None,
+            sanitize: Callable = None, nullable: bool = False):
         if isinstance(types, type):
             types = types,
         if nullable:

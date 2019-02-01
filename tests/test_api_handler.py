@@ -67,7 +67,8 @@ async def test_included_data(handler_fx: Tuple[APIHandler, MockWebsocketConnecti
     })
     result = await handler.get_rescues(id=rescue_fx.rescue.uuid)
 
-    assert len(connection.sent_messages) == 1  # ensure that no extra request was made to get the rat
+    assert len(
+        connection.sent_messages) == 1  # ensure that no extra request was made to get the rat
     assert len(result) == 1
     assert result[0] == rescue_fx.rescue
 
@@ -172,7 +173,8 @@ async def test_create_rescue(handler_fx: Tuple[APIHandler, MockWebsocketConnecti
 
 @pytest.mark.parametrize("version", Version)
 @pytest.mark.asyncio
-async def test_get_correct_version_handler(connection_fx: MockWebsocketConnection, version: Version):
+async def test_get_correct_version_handler(connection_fx: MockWebsocketConnection,
+                                           version: Version):
     connection_fx.incoming_messages.append({
         "meta": {
             "API-Version": version.value

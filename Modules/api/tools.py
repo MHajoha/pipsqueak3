@@ -15,7 +15,7 @@ _handlers = {
 }
 
 
-async def get_correct_version_handler(hostname: str, token: str=None, tls=True) -> APIHandler:
+async def get_correct_version_handler(hostname: str, token: str = None, tls=True) -> APIHandler:
     """
     Get the correct handler for the API version which the hostname provided is running.
     The returned handler will already be connected.

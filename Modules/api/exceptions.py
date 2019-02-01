@@ -16,12 +16,14 @@ class APIError(Exception):
 
 class NotConnectedError(Exception):
     """Handler not connected to API."""
-    def __init__(self, message: str=None):
+
+    def __init__(self, message: str = None):
         super().__init__(message if message else "Not connected to API")
 
 
 class MismatchedVersionError(Exception):
     """Handler version and API version are different."""
+
     def __init__(self, handler_ver: str, api_ver: str):
         super().__init__(f"Tried to connect to {api_ver} API with {handler_ver} Handler.")
 
@@ -30,7 +32,7 @@ class BaseReturnCodeException(Exception):
     """Base exception class for when the API returns an error code."""
     _default_message: str = None
 
-    def __init__(self, message: str=_default_message, response: dict=None):
+    def __init__(self, message: str = _default_message, response: dict = None):
         """
         Arguments:
              message (str): An explanation of why this exception was raised.

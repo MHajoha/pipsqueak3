@@ -21,6 +21,7 @@ from Modules.api.versions import Version
 from Modules.api.websocket import BaseWebsocketAPIHandler
 from Modules.epic import Epic
 from Modules.mark_for_deletion import MarkForDeletion
+from Modules.rat_cache import RatCache
 from Modules.rat_quotation import Quotation
 from Modules.rat_rescue import Rescue
 from Modules.rat import Rat
@@ -185,7 +186,8 @@ class WebsocketAPIHandler21(BaseWebsocketAPIHandler):
     async def _cache_included(self, included: List[dict]):
         for json_obj in included:
             if "type" not in json_obj.keys():
-                log.warning(f"JSON object {json_obj} included in response by API does no have type set.")
+                log.warning(f"JSON object {json_obj} included in response by API does no have "
+                            f"type set.")
                 included.remove(json_obj)
 
         for json_obj in included:
@@ -253,7 +255,9 @@ class WebsocketAPIHandler21(BaseWebsocketAPIHandler):
             else self.get_rescue_by_id(rescue_id)
 
         rat_id = UUID(json["attributes"]["ratId"], version=4)
-        rat = self._rat_cache[rat_id] if rat_id in self._rat_cache.keys() else await RatCache().get_rat_by_uuid(rat_id)
+        rat = self._rat_cache[
+            rat_id] if rat_id in self._rat_cache.keys() else await RatCache().get_rat_by_uuid(
+            rat_id)
 
         result = Epic(
             uuid=json["id"],

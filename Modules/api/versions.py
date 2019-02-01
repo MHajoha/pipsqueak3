@@ -50,7 +50,7 @@ _version_int_values = {
 }
 
 
-def require_api_version(version: Version, exact: bool=False):
+def require_api_version(version: Version, exact: bool = False):
     """
     Decorate a command function to require a certain API version for its execution.
     If the check fails, a warning is logged. IRC stays quiet.
@@ -61,6 +61,7 @@ def require_api_version(version: Version, exact: bool=False):
                need to match exactly.
     """
     version = version.value
+
     def dec(fun):
         def wrapper(context: Context):
             actual_version: Version = context.bot.api_handler.api_version.value
@@ -72,4 +73,5 @@ def require_api_version(version: Version, exact: bool=False):
                             f"{version[0]}.")
 
         return wrapper
+
     return dec

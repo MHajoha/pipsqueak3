@@ -33,9 +33,9 @@ class BaseWebsocketAPIHandler(APIHandler):
     Defines methods for requests and all that rubbish.
     """
 
-    def __init__(self, hostname: str, token: str=None, tls=True, *,
-                 loop: asyncio.BaseEventLoop=None,
-                 connection: websockets.WebSocketClientProtocol=None):
+    def __init__(self, hostname: str, token: str = None, tls=True, *,
+                 loop: asyncio.BaseEventLoop = None,
+                 connection: websockets.WebSocketClientProtocol = None):
         """
         Initialize a new API Handler.
 
@@ -69,8 +69,9 @@ class BaseWebsocketAPIHandler(APIHandler):
                 if loop is connection.loop:
                     self._loop = loop
                 else:
-                    raise ValueError("conflicting arguments: cannot run in a different event loop from "
-                                     "the connection")
+                    raise ValueError(
+                        "conflicting arguments: cannot run in a different event loop from "
+                        "the connection")
 
         self._connection: websockets.WebSocketClientProtocol = connection
 
@@ -222,7 +223,7 @@ class BaseWebsocketAPIHandler(APIHandler):
             log.debug(f"Received {result['meta']['count']} entries from the API")
         return result
 
-    async def _retrieve_response(self, request_id: UUID, max_wait: int=600) -> Dict[str, Any]:
+    async def _retrieve_response(self, request_id: UUID, max_wait: int = 600) -> Dict[str, Any]:
         """
         Wait for a response to a particular request and return it. Responses are provided in
         :field:`self._request_responses` by :meth:`self._message_handler`.
@@ -270,7 +271,7 @@ class BaseWebsocketAPIHandler(APIHandler):
             return response
 
 
-def generate_ws_uri(hostname: str, path: str= "/", token: str=None, tls=True) -> str:
+def generate_ws_uri(hostname: str, path: str = "/", token: str = None, tls=True) -> str:
     """
     Get the URI for the specified parts.
 

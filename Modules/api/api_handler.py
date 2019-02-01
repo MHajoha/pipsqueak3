@@ -22,7 +22,6 @@ from Modules.rat_rescue import Rescue
 from Modules.rat import Rat
 from utils.ratlib import Status, Outcome, Platforms
 
-
 _UNSET = object()
 
 
@@ -39,7 +38,7 @@ class APIHandler(ABC):
     connected = abstractproperty()
 
     @abstractmethod
-    def __init__(self, hostname: str, token: str=None, tls=True):
+    def __init__(self, hostname: str, token: str = None, tls=True):
         """
         Initialize a new API Handler.
 
@@ -69,7 +68,7 @@ class APIHandler(ABC):
         """
 
     @abstractmethod
-    async def update_rescue(self, rescue: Rescue, full: bool=True):
+    async def update_rescue(self, rescue: Rescue, full: bool = True):
         """
         Update a rescue's data in the API.
 
@@ -109,26 +108,26 @@ class APIHandler(ABC):
 
     @abstractmethod
     async def get_rescues(self, *,
-                          id: Union[UUID, SequelizeOperator[UUID]]=_UNSET,
-                          client: Union[str, SequelizeOperator[str]]=_UNSET,
-                          system: Union[str, SequelizeOperator[str]]=_UNSET,
-                          status: Union[Status, SequelizeOperator[Status]]=_UNSET,
+                          id: Union[UUID, SequelizeOperator[UUID]] = _UNSET,
+                          client: Union[str, SequelizeOperator[str]] = _UNSET,
+                          system: Union[str, SequelizeOperator[str]] = _UNSET,
+                          status: Union[Status, SequelizeOperator[Status]] = _UNSET,
                           unidentified_rats: Union[Iterable[str],
-                                                   SequelizeOperator[Iterable[str]]]=_UNSET,
-                          created_at: Union[datetime, SequelizeOperator[datetime]]=_UNSET,
-                          updated_at: Union[datetime, SequelizeOperator[datetime]]=_UNSET,
+                                                   SequelizeOperator[Iterable[str]]] = _UNSET,
+                          created_at: Union[datetime, SequelizeOperator[datetime]] = _UNSET,
+                          updated_at: Union[datetime, SequelizeOperator[datetime]] = _UNSET,
                           quotes: Union[Iterable[Quotation],
-                                        SequelizeOperator[Iterable[Quotation]]]=_UNSET,
-                          title: Union[str, SequelizeOperator[Optional[str]], None]=_UNSET,
-                          code_red: Union[bool, SequelizeOperator[bool]]=_UNSET,
-                          first_limpet: Union[Rat, SequelizeOperator[Rat]]=_UNSET,
+                                        SequelizeOperator[Iterable[Quotation]]] = _UNSET,
+                          title: Union[str, SequelizeOperator[Optional[str]], None] = _UNSET,
+                          code_red: Union[bool, SequelizeOperator[bool]] = _UNSET,
+                          first_limpet: Union[Rat, SequelizeOperator[Rat]] = _UNSET,
                           marked_for_deletion: Union[MarkForDeletion,
-                                                     SequelizeOperator[MarkForDeletion]]=_UNSET,
-                          irc_nickname: Union[str, SequelizeOperator[str]]=_UNSET,
-                          lang_id: Union[str, SequelizeOperator[str]]=_UNSET,
+                                                     SequelizeOperator[MarkForDeletion]] = _UNSET,
+                          irc_nickname: Union[str, SequelizeOperator[str]] = _UNSET,
+                          lang_id: Union[str, SequelizeOperator[str]] = _UNSET,
                           outcome: Union[Outcome,
-                                         SequelizeOperator[Optional[Outcome]], None]=_UNSET,
-                          platform: Union[Platforms, SequelizeOperator[Platforms]]=_UNSET
+                                         SequelizeOperator[Optional[Outcome]], None] = _UNSET,
+                          platform: Union[Platforms, SequelizeOperator[Platforms]] = _UNSET
                           ) -> List[Rescue]:
         """
         Get all rescues from the API matching the criteria provided.
@@ -170,9 +169,9 @@ class APIHandler(ABC):
 
     @abstractmethod
     async def get_rats(self, *,
-                       id: Union[UUID, SequelizeOperator[UUID]]=_UNSET,
-                       name: Union[str, SequelizeOperator[str]]=_UNSET,
-                       platform: Union[Platforms, SequelizeOperator[Platforms]]=_UNSET
+                       id: Union[UUID, SequelizeOperator[UUID]] = _UNSET,
+                       name: Union[str, SequelizeOperator[str]] = _UNSET,
+                       platform: Union[Platforms, SequelizeOperator[Platforms]] = _UNSET
                        ) -> List[Rat]:
         """
         Get all rats from the API matching the criteria provided.
