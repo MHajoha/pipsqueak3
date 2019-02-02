@@ -281,6 +281,9 @@ def parametrize(*params: _AbstractParam, usage: str = None):
         ...     pass
     """
 
+    if usage is None:
+        usage = _generate_usage(params)
+
     def decorator(fun: Callable):
         @wraps(fun)
         async def wrapper(context: Context, *args):
@@ -331,7 +334,7 @@ def parametrize(*params: _AbstractParam, usage: str = None):
 def _generate_usage(params: Iterable[_AbstractParam]) -> str:
     result = ""
     for param in params:
-        result += param
+        result += str(param)
         result += " "
 
     return result
