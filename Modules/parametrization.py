@@ -2,7 +2,7 @@ from abc import ABC, abstractproperty, abstractmethod
 from asyncio import iscoroutine
 from enum import Enum, auto
 from functools import wraps
-from typing import Iterable, Callable, Iterator, Tuple, Any, List
+from typing import Iterable, Callable, Iterator, Tuple, Any, List, Union, Optional
 from uuid import UUID
 
 from Modules.rat import Rat
@@ -11,6 +11,7 @@ from Modules.rat_rescue import Rescue
 from config import config
 from Modules.context import Context
 from Modules.rat_command import log
+from utils.ratlib import Platforms
 
 
 class _EvaluationResult(Enum):
@@ -203,7 +204,27 @@ class RatParam(_AbstractParam):
     """
     _usage_name = "rat"
 
+    _AUTO_TYPE = type("AUTO", (object,), {})
+    AUTO = _AUTO_TYPE()
+
+    def __init__(self, *, platform: Union[Platforms, _AUTO_TYPE, None] = None,
+                 optional: bool = False):
+        super().__init__(optional)
+        self.platform = platform
+
+    def _get_effective_platform(self, target_args: List[Any]) -> Optional[Platforms]:
+        if self.platform is self.AUTO:
+            for arg in reversed(target_args):
+                if isinstance(arg, Rescue) and arg.platform:
+                    return arg.platform
+            else:
+                return None
+        else:
+            return self.platform
+
     async def evaluate(self, args: _ArgumentProvider, target_args: List[Any]) -> _EvaluationResult:
+        platform = self._get_effective_platform(target_args)
+
         arg = args.next_arg()
         if arg.startswith("@"):
             try:
@@ -216,19 +237,30 @@ class RatParam(_AbstractParam):
             else:
                 found_rat = await RatCache().get_rat_by_uuid(uuid)
                 if found_rat is None:
-                    log.info(f"Could not find a rat with UUID {uuid}")
+                    log.debug(f"Could not find a rat with UUID {uuid}")
                     await args.context.reply(
                         f"{args.context.user.nickname}: Could not find rat with ID {uuid}!")
+                    return _EvaluationResult.CANCEL
+                elif platform is not None and found_rat.platform is not platform:
+                    log.debug(f"Found rat {found_rat.name} did not have the correct platform "
+                              f"{platform.name}. Actual platform: {found_rat.platform.name}")
+                    await args.context.reply(f"{args.context.user.nickname}: Rat with ID {uuid} is "
+                                             f"not on {platform.name}.")
                     return _EvaluationResult.CANCEL
                 else:
                     target_args.append(found_rat)
                     return _EvaluationResult.CONTINUE
 
-        found_rat = await RatCache().get_rat_by_name(arg)
+        found_rat = await RatCache().get_rat_by_name(arg, platform)
         if found_rat is None:
-            log.info(f"Could not find a rat with name {arg}")
-            await args.context.reply(
-                f"{args.context.user.nickname}: Could not find rat '{arg}'!")
+            if platform is None:
+                log.info(f"Could not find a rat with name {arg}")
+                await args.context.reply(
+                    f"{args.context.user.nickname}: Could not find rat '{arg}'!")
+            else:
+                log.info(f"Could not find a rat with name {arg} on platform {platform.name}")
+                await args.context.reply(f"{args.context.user.nickname}: Could not find rat "
+                                         f"'{arg}' on platform {platform.name}!")
             return _EvaluationResult.CANCEL
         else:
             target_args.append(found_rat)
