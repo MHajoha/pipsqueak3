@@ -332,9 +332,6 @@ def parametrize(*params: _AbstractParam, usage: str = None):
             Parameters, each of which will be translated into one or more arguments. Available are
             :class:`RescueParam`, :class:`RatParam`, :class:`WordParam` and :class:`TextParam`.
             Check their respective documentation for more info.
-
-            The classes :class:`Rescue` and :class:`Rats` can be used as a shorthand for the default
-            configurations of :class:`RescueParam` and :class:`RatParam`.
         usage (str):
             String representing the correct usage of this command. Will be printed if it is used
             incorrectly. If this is omitted, a string will be generated from the parameters.
@@ -355,11 +352,6 @@ def parametrize(*params: _AbstractParam, usage: str = None):
             target_args = [context, *args]
 
             for param in params:
-                if param is Rescue or param is RescueParam:
-                    param = RescueParam()
-                elif param is Rat or param is RatParam:
-                    param = RatParam()
-
                 if state.is_at_end:
                     # no more arguments provided
                     if param.optional:
