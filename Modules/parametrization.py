@@ -186,6 +186,38 @@ class RescueParam(_AbstractParam):
         self.include_creation = include_creation
         self.closed = closed
 
+    async def evaluate(self, args: _ArgumentProvider, target_args: List[Any]) -> _EvaluationResult:
+        rescue = None
+        arg = args.next_arg()
+        if arg.startswith("@"):
+            try:
+                uuid = UUID(arg[1:])
+            except ValueError:
+                log.warn(f"Argument for rescue starts with @, but was not a valid "
+                         f"UUID: {arg}")
+            except IndexError:
+                log.warn(f"Argument for rescue is a sole @")
+            else:
+                rescue = args.context.bot.board.find_by_uuid(uuid)
+                if rescue is None:
+                    log.debug(f"Could not find a rescue with UUID {uuid}")
+                    await args.context.reply(
+                        f"{args.context.user.nickname}: Could not find rescue with ID {uuid}!")
+                    return _EvaluationResult.CANCEL
+                else:
+                    target_args.append(rescue)
+                    return _EvaluationResult.CONTINUE
+
+        rescue = args.context.bot.board.find_by_name(arg)
+        if rescue is None:
+            log.info(f"Could not find a rescue for client {arg}")
+            await args.context.reply(
+                f"{args.context.user.nickname}: Could not find rat '{arg}'!")
+            return _EvaluationResult.CANCEL
+        else:
+            target_args.append(rescue)
+            return _EvaluationResult.CONTINUE
+
     def __repr__(self):
         result = type(self).__name__ + "("
         for flag, name in ((self.create, "create"), (self.include_creation, "include_creation"),
